@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getDiseaseHistory } from "../../api/diseaseApi";
+import { getDiseaseHistory } from "../../API/diseaseApi";
 
 
 interface History {
