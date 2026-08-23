@@ -1,210 +1,165 @@
 import axios from "axios";
 
-// ==========================
-// API URL
-// ==========================
+// ======================================================
+// RAILWAY BACKEND URL
+// ======================================================
 
 const API_URL =
-    "https://kisanai-production-7b9c.up.railway.app/api";
+    "https://kisanai-production-7b9c.up.railway.app";
 
-// ==========================
-// Axios Instance
-// ==========================
+// ======================================================
+// AXIOS INSTANCE
+// ======================================================
 
 const api = axios.create({
-
     baseURL: API_URL,
-
+    timeout: 60000,
 });
 
-// ==========================
-// Request Interceptor
-// ==========================
+// ======================================================
+// REQUEST INTERCEPTOR
+// Adds JWT token automatically
+// ======================================================
 
 api.interceptors.request.use(
-
     (config) => {
-
         const token = localStorage.getItem("token");
 
         if (token) {
+            config.headers = config.headers || {};
 
             config.headers.Authorization =
                 `Bearer ${token}`;
-
         }
 
         return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
 
+// ======================================================
+// RESPONSE INTERCEPTOR
+// ======================================================
+
+api.interceptors.response.use(
+    (response) => {
+        return response;
     },
 
     (error) => {
+        console.error(
+            "API ERROR:",
+            error.response?.status,
+            error.response?.data || error.message
+        );
 
-        return Promise.reject(error);
-
-    }
-
-);
-
-// ==========================
-// Response Interceptor
-// ==========================
-
-api.interceptors.response.use(
-
-    (response) => response,
-
-    (error) => {
-
+        // Unauthorized
         if (error.response?.status === 401) {
-
             localStorage.removeItem("token");
 
             alert(
-                "Session Expired. Please Login Again."
+                "Session expired. Please login again."
             );
 
             window.location.href = "/login";
-
         }
 
         return Promise.reject(error);
-
     }
-
 );
 
-// ==========================
-// Types
-// ==========================
+// ======================================================
+// TYPES
+// ======================================================
 
 export interface ChatResponse {
-
     message?: string;
-
     response: string;
-
 }
 
 export interface ChatHistory {
-
     id: number;
-
     message: string;
-
     response: string;
-
     created_at: string;
-
 }
 
 export interface VoiceResponse {
-
     question: string;
-
     answer: string;
-
     audio: string;
-
     language: string;
-
     chat_id: number;
-
 }
 
-// ==========================
-// Send Text Message
-// ==========================
+// ======================================================
+// SEND TEXT MESSAGE
+// POST /api/chat
+// ======================================================
 
 export const sendMessage = async (
-
     message: string,
-
     language: "hi" | "mr" | "en" = "hi"
-
 ): Promise<ChatResponse> => {
 
     const response = await api.post<ChatResponse>(
-
-        "/chat",
-
+        "/api/chat",
         {
-
             message,
-
-            language
-
+            language,
         }
-
     );
 
     return response.data;
-
 };
 
-// ==========================
-// Chat History
-// ==========================
+// ======================================================
+// GET CHAT HISTORY
+// GET /api/chat/history
+// ======================================================
 
-export const getChatHistory = async (
+export const getChatHistory =
+    async (): Promise<ChatHistory[]> => {
 
-): Promise<ChatHistory[]> => {
+        const response =
+            await api.get<ChatHistory[]>(
+                "/api/chat/history"
+            );
 
-    const response = await api.get<ChatHistory[]>(
+        return response.data;
+    };
 
-        "/chat/history"
-
-    );
-
-    return response.data;
-
-};
-
-// ==========================
-// Voice Chat
-// ==========================
+// ======================================================
+// VOICE CHAT
+// POST /api/voice/?language=en
+// ======================================================
 
 export const voiceChat = async (
-
     audio: Blob,
-
     language: "hi" | "mr" | "en" = "hi"
-
 ): Promise<VoiceResponse> => {
 
     const formData = new FormData();
 
     formData.append(
-
         "file",
-
         audio,
-
         "voice.webm"
-
     );
 
-    const response = await api.post<VoiceResponse>(
-
-        `/voice/?language=${language}`,
-
-        formData,
-
-        {
-
-            headers: {
-
-                "Content-Type":
-                    "multipart/form-data"
-
-            }
-
-        }
-
-    );
+    const response =
+        await api.post<VoiceResponse>(
+            `/api/voice/?language=${language}`,
+            formData
+        );
 
     return response.data;
-
 };
+
+// ======================================================
+// DEFAULT EXPORT
+// ======================================================
 
 export default api;
