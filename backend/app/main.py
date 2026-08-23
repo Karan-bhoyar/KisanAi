@@ -70,17 +70,28 @@ app.mount(
 # CORS
 # ==========================================
 
+# Local frontend URLs
+allowed_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+# Production Vercel URL
+frontend_url = os.getenv("FRONTEND_URL")
+
+if frontend_url:
+    allowed_origins.append(
+        frontend_url.rstrip("/")
+    )
+
+
 app.add_middleware(
     CORSMiddleware,
 
-    allow_origins=[
-        # Local development
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
+    allow_origins=allowed_origins,
 
-        # Vercel frontend
-        "https://YOUR-ACTUAL-VERCEL-URL.vercel.app",
-    ],
+    # Allow Vercel preview deployments also
+    allow_origin_regex=r"https://.*\.vercel\.app",
 
     allow_credentials=True,
 
@@ -204,7 +215,6 @@ app.include_router(
 
 @app.get("/")
 def root():
-
     return {
         "message": "Kisan AI Backend Running 🚀",
         "version": "1.0.0",
