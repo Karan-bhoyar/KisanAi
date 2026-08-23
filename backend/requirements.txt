@@ -9,7 +9,7 @@ pydantic-settings==2.13.1
 
 SQLAlchemy==2.0.47
 alembic==1.18.5
-psycopg2-binary==2.9.12
+psycopg[binary]==3.3.4
 
 python-jose==3.5.0
 PyJWT==2.11.0
@@ -20,6 +20,7 @@ email-validator==2.3.0
 httpx==0.28.1
 requests==2.32.5
 aiohttp==3.13.3
+aiofiles==25.1.0
 
 numpy==2.4.2
 Pillow==12.1.1
@@ -49,11 +50,10 @@ tiktoken==0.12.0
 
 pdfplumber==0.11.9
 pypdfium2==5.6.0
+reportlab==4.4.10
 
 beautifulsoup4==4.14.3
 lxml==6.0.0
 
 tavily-python==0.7.23
 duckduckgo_search==8.1.1
-
-psycopg[binary]==3.3.4
