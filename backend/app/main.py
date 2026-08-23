@@ -1,6 +1,16 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+
+
+# ==========================================
+# CREATE UPLOADS DIRECTORY
+# ==========================================
+
+os.makedirs("uploads", exist_ok=True)
+
 
 # ==========================================
 # API ROUTES
@@ -25,6 +35,7 @@ from app.api.document import (
     router as document_router
 )
 
+
 # ==========================================
 # CHAT ROUTE
 # ==========================================
@@ -32,6 +43,7 @@ from app.api.document import (
 from app.routes.chat import (
     router as chat_router
 )
+
 
 # ==========================================
 # FASTAPI APP
@@ -41,6 +53,7 @@ app = FastAPI(
     title="Kisan AI API",
     version="1.0.0"
 )
+
 
 # ==========================================
 # STATIC FILES
@@ -52,6 +65,7 @@ app.mount(
     name="uploads"
 )
 
+
 # ==========================================
 # CORS
 # ==========================================
@@ -62,6 +76,10 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+
+        # Vercel frontend
+        # Add your exact Vercel URL here if needed
+        # "https://your-project.vercel.app",
     ],
 
     allow_credentials=True,
@@ -71,6 +89,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # ==========================================
 # AUTH
 # ==========================================
@@ -78,6 +97,7 @@ app.add_middleware(
 app.include_router(
     auth_router
 )
+
 
 # ==========================================
 # ADMIN
@@ -87,6 +107,7 @@ app.include_router(
     admin_router
 )
 
+
 # ==========================================
 # FARMER
 # ==========================================
@@ -94,6 +115,7 @@ app.include_router(
 app.include_router(
     farmer_router
 )
+
 
 # ==========================================
 # DASHBOARD
@@ -103,6 +125,7 @@ app.include_router(
     dashboard_router
 )
 
+
 # ==========================================
 # AI CHAT 🤖
 # ==========================================
@@ -110,6 +133,7 @@ app.include_router(
 app.include_router(
     chat_router
 )
+
 
 # ==========================================
 # VOICE AI 🎤
@@ -119,6 +143,7 @@ app.include_router(
     voice_router
 )
 
+
 # ==========================================
 # DISEASE DETECTION 🦠
 # ==========================================
@@ -126,6 +151,7 @@ app.include_router(
 app.include_router(
     disease_router
 )
+
 
 # ==========================================
 # CROP RECOMMENDATION 🌾
@@ -135,6 +161,7 @@ app.include_router(
     crop.router
 )
 
+
 # ==========================================
 # WEATHER AGENT 🌦️
 # ==========================================
@@ -142,6 +169,7 @@ app.include_router(
 app.include_router(
     weather.router
 )
+
 
 # ==========================================
 # GOVERNMENT SCHEMES 🏛️
@@ -151,6 +179,7 @@ app.include_router(
     government_scheme.router
 )
 
+
 # ==========================================
 # MARKET PRICE AGENT 📈
 # ==========================================
@@ -159,6 +188,7 @@ app.include_router(
     market_price_router
 )
 
+
 # ==========================================
 # DOCUMENT / RAG 📚
 # ==========================================
@@ -166,6 +196,7 @@ app.include_router(
 app.include_router(
     document_router
 )
+
 
 # ==========================================
 # ROOT
@@ -188,5 +219,3 @@ def root():
             "RAG"
         ]
     }
-
-
