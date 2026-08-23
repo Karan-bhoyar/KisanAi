@@ -79,7 +79,7 @@ app.add_middleware(
         "http://127.0.0.1:5173",
 
         # Vercel frontend
-        "https://YOUR-VERCEL-URL.vercel.app",
+        "https://YOUR-ACTUAL-VERCEL-URL.vercel.app",
     ],
 
     allow_credentials=True,
