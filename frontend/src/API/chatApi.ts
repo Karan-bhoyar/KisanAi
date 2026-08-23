@@ -1,8 +1,11 @@
 import axios from "axios";
 
+// ==========================
+// API URL
+// ==========================
 
-const API_URL = "http://127.0.0.1:8000/api";
-
+const API_URL =
+    "https://kisanai-production-7b9c.up.railway.app/api";
 
 // ==========================
 // Axios Instance
@@ -14,8 +17,6 @@ const api = axios.create({
 
 });
 
-
-
 // ==========================
 // Request Interceptor
 // ==========================
@@ -26,7 +27,6 @@ api.interceptors.request.use(
 
         const token = localStorage.getItem("token");
 
-
         if (token) {
 
             config.headers.Authorization =
@@ -34,11 +34,9 @@ api.interceptors.request.use(
 
         }
 
-
         return config;
 
     },
-
 
     (error) => {
 
@@ -47,8 +45,6 @@ api.interceptors.request.use(
     }
 
 );
-
-
 
 // ==========================
 // Response Interceptor
@@ -56,43 +52,31 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
 
-
     (response) => response,
-
 
     (error) => {
 
-
         if (error.response?.status === 401) {
 
-
             localStorage.removeItem("token");
-
 
             alert(
                 "Session Expired. Please Login Again."
             );
 
-
             window.location.href = "/login";
-
 
         }
 
-
         return Promise.reject(error);
-
 
     }
 
 );
 
-
-
 // ==========================
 // Types
 // ==========================
-
 
 export interface ChatResponse {
 
@@ -101,8 +85,6 @@ export interface ChatResponse {
     response: string;
 
 }
-
-
 
 export interface ChatHistory {
 
@@ -115,8 +97,6 @@ export interface ChatHistory {
     created_at: string;
 
 }
-
-
 
 export interface VoiceResponse {
 
@@ -132,8 +112,6 @@ export interface VoiceResponse {
 
 }
 
-
-
 // ==========================
 // Send Text Message
 // ==========================
@@ -145,7 +123,6 @@ export const sendMessage = async (
     language: "hi" | "mr" | "en" = "hi"
 
 ): Promise<ChatResponse> => {
-
 
     const response = await api.post<ChatResponse>(
 
@@ -161,13 +138,9 @@ export const sendMessage = async (
 
     );
 
-
     return response.data;
 
-
 };
-
-
 
 // ==========================
 // Chat History
@@ -177,20 +150,15 @@ export const getChatHistory = async (
 
 ): Promise<ChatHistory[]> => {
 
-
     const response = await api.get<ChatHistory[]>(
 
         "/chat/history"
 
     );
 
-
     return response.data;
 
-
 };
-
-
 
 // ==========================
 // Voice Chat
@@ -204,9 +172,7 @@ export const voiceChat = async (
 
 ): Promise<VoiceResponse> => {
 
-
     const formData = new FormData();
-
 
     formData.append(
 
@@ -217,8 +183,6 @@ export const voiceChat = async (
         "voice.webm"
 
     );
-
-
 
     const response = await api.post<VoiceResponse>(
 
@@ -239,13 +203,8 @@ export const voiceChat = async (
 
     );
 
-
-
     return response.data;
 
-
 };
-
-
 
 export default api;
