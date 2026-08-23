@@ -74,12 +74,12 @@ app.add_middleware(
     CORSMiddleware,
 
     allow_origins=[
+        # Local development
         "http://localhost:5173",
         "http://127.0.0.1:5173",
 
         # Vercel frontend
-        # Add your exact Vercel URL here if needed
-        # "https://your-project.vercel.app",
+        "https://YOUR-VERCEL-URL.vercel.app",
     ],
 
     allow_credentials=True,
