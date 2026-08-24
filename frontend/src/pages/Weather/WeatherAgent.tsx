@@ -8,7 +8,6 @@ import {
     AlertTriangle,
     Search,
     Loader2,
-    CloudRain,
     SprayCan,
 } from "lucide-react";
 

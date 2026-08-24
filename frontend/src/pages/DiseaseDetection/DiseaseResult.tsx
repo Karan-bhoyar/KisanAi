@@ -1,5 +1,5 @@
-interface DiseaseResultProps {
 
+interface DiseaseResultProps {
     result: {
         disease_name: string;
         confidence: string;
@@ -10,7 +10,6 @@ interface DiseaseResultProps {
     } | null;
 
     loading: boolean;
-
 }
 
 function DiseaseResult({
@@ -19,9 +18,7 @@ function DiseaseResult({
 }: DiseaseResultProps) {
 
     if (loading) {
-
         return (
-
             <div className="bg-white rounded-2xl shadow-lg p-8 mt-6 text-center">
 
                 <h2 className="text-2xl font-bold text-green-700 mb-4">
@@ -33,15 +30,12 @@ function DiseaseResult({
                 </p>
 
             </div>
-
         );
-
     }
 
+
     if (!result) {
-
         return (
-
             <div className="bg-white rounded-2xl shadow-lg p-8 mt-6">
 
                 <h2 className="text-2xl font-bold text-green-700 mb-6">
@@ -57,80 +51,86 @@ function DiseaseResult({
                 </p>
 
             </div>
-
         );
-
     }
 
-    return (
 
+    return (
         <div className="bg-white rounded-2xl shadow-lg p-8 mt-6">
 
             <h2 className="text-2xl font-bold text-green-700 mb-6">
                 🌿 Disease Prediction Result
             </h2>
 
+
             <div className="space-y-6">
 
-                <div>
+                {/* Disease Name */}
 
+                <div>
                     <h3 className="font-semibold text-gray-700">
                         🦠 Disease Name
                     </h3>
 
                     <p className="text-xl font-bold text-red-600">
-                        {result.disease_name}
+                        {result.disease_name || "Not detected"}
                     </p>
-
                 </div>
 
-                <div>
 
+                {/* Confidence */}
+
+                <div>
                     <h3 className="font-semibold text-gray-700">
                         🎯 Confidence
                     </h3>
 
                     <p className="text-lg font-semibold text-blue-600">
-                        {result.confidence}
+                        {result.confidence || "Not available"}
                     </p>
-
                 </div>
 
-                <div>
 
+                {/* Description */}
+
+                <div>
                     <h3 className="font-semibold text-gray-700">
                         📋 Description
                     </h3>
 
                     <p className="text-gray-600 leading-relaxed">
-                        {result.description}
+                        {result.description || "No description available."}
                     </p>
-
                 </div>
 
-                <div>
 
+                {/* Treatment */}
+
+                <div>
                     <h3 className="font-semibold text-gray-700">
                         💊 Treatment
                     </h3>
 
                     <p className="text-gray-700 leading-relaxed">
-                        {result.treatment}
+                        {result.treatment || "No treatment information available."}
                     </p>
-
                 </div>
 
-                <div>
 
+                {/* Prevention */}
+
+                <div>
                     <h3 className="font-semibold text-gray-700">
                         🛡 Prevention
                     </h3>
 
                     <p className="text-gray-700 leading-relaxed">
-                        {result.prevention}
+                        {result.prevention || "No prevention information available."}
                     </p>
-
                 </div>
+
+
+                {/* History ID */}
 
                 <div className="bg-green-50 rounded-xl p-4">
 
@@ -147,9 +147,7 @@ function DiseaseResult({
             </div>
 
         </div>
-
     );
-
 }
 
 export default DiseaseResult;
