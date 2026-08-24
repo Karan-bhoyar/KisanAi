@@ -1,7 +1,10 @@
 import { useState } from "react";
+
 import DiseaseUpload from "./DiseaseUpload";
 import DiseaseResult from "./DiseaseResult";
+
 import { predictDisease } from "../../API/diseaseApi";
+
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -12,234 +15,193 @@ import {
 
 
 interface DiseaseResultType {
-
-    disease_name:string;
-
-    description:string;
-
-    treatment:string;
-
-    history_id:number;
-
+    disease_name: string;
+    confidence: string;
+    description: string;
+    treatment: string;
+    prevention: string;
+    history_id: number;
 }
 
 
-
-function DiseaseDetectionPage(){
-
+function DiseaseDetectionPage() {
 
     const navigate = useNavigate();
 
+    const [image, setImage] =
+        useState<File | null>(null);
 
-    const [image,setImage] =
-    useState<File | null>(null);
+    const [result, setResult] =
+        useState<DiseaseResultType | null>(null);
 
-
-
-    const [result,setResult] =
-    useState<DiseaseResultType | null>(null);
-
-
-
-    const [loading,setLoading] =
-    useState(false);
+    const [loading, setLoading] =
+        useState(false);
 
 
+    const handlePredict = async () => {
 
-
-
-    const handlePredict = async()=>{
-
-
-        if(!image){
+        if (!image) {
 
             alert(
                 "Please upload an image first"
             );
 
             return;
-
         }
 
 
-
-        try{
-
+        try {
 
             setLoading(true);
 
-
-
             const data =
-            await predictDisease(image);
-
-
+                await predictDisease(image);
 
             setResult(data);
 
-
-
         }
-        catch(error){
-
+        catch (error) {
 
             console.error(
+                "Disease Detection Error:",
                 error
             );
-
 
             alert(
                 "Disease detection failed"
             );
 
-
         }
-        finally{
+        finally {
 
             setLoading(false);
 
         }
 
-
     };
-
-
-
-
 
 
     return (
 
-
-        <div className="
-            relative
-            min-h-screen
-            overflow-hidden
-            bg-gradient-to-br
-            from-green-50
-            via-white
-            to-emerald-100
-            p-4
-            md:p-8
-        ">
-
-
+        <div
+            className="
+                relative
+                min-h-screen
+                overflow-hidden
+                bg-gradient-to-br
+                from-green-50
+                via-white
+                to-emerald-100
+                p-4
+                md:p-8
+            "
+        >
 
             {/* Floating Background */}
 
-            <div className="
-                absolute
-                top-20
-                left-10
-                text-6xl
-                opacity-20
-                animate-bounce
-            ">
+            <div
+                className="
+                    absolute
+                    top-20
+                    left-10
+                    text-6xl
+                    opacity-20
+                    animate-bounce
+                "
+            >
                 🌱
             </div>
 
 
-
-            <div className="
-                absolute
-                right-20
-                top-40
-                text-6xl
-                opacity-20
-                animate-pulse
-            ">
+            <div
+                className="
+                    absolute
+                    right-20
+                    top-40
+                    text-6xl
+                    opacity-20
+                    animate-pulse
+                "
+            >
                 🌾
             </div>
 
 
-
-            <div className="
-                absolute
-                bottom-20
-                left-1/3
-                text-5xl
-                opacity-20
-                animate-bounce
-            ">
+            <div
+                className="
+                    absolute
+                    bottom-20
+                    left-1/3
+                    text-5xl
+                    opacity-20
+                    animate-bounce
+                "
+            >
                 🍃
             </div>
 
 
-
-
-
-
-
-            <div className="
-                relative
-                max-w-5xl
-                mx-auto
-            ">
-
-
-
-
+            <div
+                className="
+                    relative
+                    max-w-5xl
+                    mx-auto
+                "
+            >
 
                 {/* HEADER */}
 
-
-                <div className="
-                    flex
-                    flex-col
-                    md:flex-row
-                    justify-between
-                    items-center
-                    gap-5
-                    mb-8
-                ">
-
-
+                <div
+                    className="
+                        flex
+                        flex-col
+                        md:flex-row
+                        justify-between
+                        items-center
+                        gap-5
+                        mb-8
+                    "
+                >
 
                     <div>
 
+                        <h1
+                            className="
+                                text-3xl
+                                md:text-4xl
+                                font-bold
+                                text-green-700
+                                flex
+                                items-center
+                                gap-3
+                            "
+                        >
 
-                        <h1 className="
-                            text-3xl
-                            md:text-4xl
-                            font-bold
-                            text-green-700
-                            flex
-                            items-center
-                            gap-3
-                        ">
-
-                            <Leaf/>
+                            <Leaf />
 
                             Disease Detection
 
                         </h1>
 
 
-
-
-                        <p className="
-                            text-gray-600
-                            mt-2
-                        ">
+                        <p
+                            className="
+                                text-gray-600
+                                mt-2
+                            "
+                        >
 
                             AI powered crop disease analysis 🌿
 
                         </p>
 
-
                     </div>
 
 
-
-
-
-
                     <button
-
-                        onClick={()=>
+                        onClick={() =>
                             navigate("/disease/history")
                         }
-
                         className="
                             flex
                             items-center
@@ -253,63 +215,40 @@ function DiseaseDetectionPage(){
                             hover:scale-105
                             transition
                         "
-
                     >
 
-                        <History size={20}/>
+                        <History size={20} />
 
                         History
 
                     </button>
 
-
-
                 </div>
 
 
-
-
-
-
-
-
-                {/* UPLOAD ONLY */}
-
+                {/* UPLOAD */}
 
                 <DiseaseUpload
-
                     image={image}
-
                     setImage={setImage}
-
                 />
-
-
-
-
-
-
-
 
 
                 {/* DETECT BUTTON */}
 
-
-                <div className="
-                    flex
-                    justify-center
-                    mt-8
-                ">
-
+                <div
+                    className="
+                        flex
+                        justify-center
+                        mt-8
+                    "
+                >
 
                     <button
 
-
                         onClick={handlePredict}
 
-
                         disabled={loading}
-
 
                         className="
                             flex
@@ -328,81 +267,46 @@ function DiseaseDetectionPage(){
                             hover:scale-105
                             transition
                             disabled:opacity-50
+                            disabled:cursor-not-allowed
                         "
-
 
                     >
 
-
-                        <ScanLine size={22}/>
-
-
+                        <ScanLine size={22} />
 
                         {
-
                             loading
-
-                            ?
-
-                            "AI Scanning..."
-
-                            :
-
-                            "Detect Disease"
-
+                                ? "AI Scanning..."
+                                : "Detect Disease"
                         }
-
-
 
                     </button>
 
-
-
                 </div>
-
-
-
-
-
-
 
 
                 {/* RESULT */}
 
-
-
-                <div className="
-                    mt-8
-                ">
-
+                <div
+                    className="
+                        mt-8
+                    "
+                >
 
                     <DiseaseResult
-
                         result={result}
-
                         loading={loading}
-
                     />
-
 
                 </div>
 
-
-
-
-
-
             </div>
 
-
-
         </div>
-
 
     );
 
 }
-
 
 
 export default DiseaseDetectionPage;

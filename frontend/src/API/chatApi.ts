@@ -13,12 +13,12 @@ const API_URL =
 
 const api = axios.create({
     baseURL: API_URL,
-    timeout: 60000,
+    timeout: 120000,
 });
 
 // ======================================================
 // REQUEST INTERCEPTOR
-// Adds JWT token automatically
+// Automatically adds JWT token
 // ======================================================
 
 api.interceptors.request.use(
@@ -27,9 +27,7 @@ api.interceptors.request.use(
 
         if (token) {
             config.headers = config.headers || {};
-
-            config.headers.Authorization =
-                `Bearer ${token}`;
+            config.headers.Authorization = `Bearer ${token}`;
         }
 
         return config;
@@ -55,13 +53,11 @@ api.interceptors.response.use(
             error.response?.data || error.message
         );
 
-        // Unauthorized
+        // JWT expired / unauthorized
         if (error.response?.status === 401) {
             localStorage.removeItem("token");
 
-            alert(
-                "Session expired. Please login again."
-            );
+            alert("Session expired. Please login again.");
 
             window.location.href = "/login";
         }
@@ -107,8 +103,8 @@ export const sendMessage = async (
     const response = await api.post<ChatResponse>(
         "/api/chat",
         {
-            message,
-            language,
+            message: message,
+            language: language,
         }
     );
 
@@ -120,20 +116,18 @@ export const sendMessage = async (
 // GET /api/chat/history
 // ======================================================
 
-export const getChatHistory =
-    async (): Promise<ChatHistory[]> => {
+export const getChatHistory = async (): Promise<ChatHistory[]> => {
 
-        const response =
-            await api.get<ChatHistory[]>(
-                "/api/chat/history"
-            );
+    const response = await api.get<ChatHistory[]>(
+        "/api/chat/history"
+    );
 
-        return response.data;
-    };
+    return response.data;
+};
 
 // ======================================================
 // VOICE CHAT
-// POST /api/voice/?language=en
+// POST /api/voice/stt
 // ======================================================
 
 export const voiceChat = async (
@@ -149,11 +143,10 @@ export const voiceChat = async (
         "voice.webm"
     );
 
-    const response =
-        await api.post<VoiceResponse>(
-            `/api/voice/?language=${language}`,
-            formData
-        );
+    const response = await api.post<VoiceResponse>(
+        `/api/voice/stt?language=${language}`,
+        formData
+    );
 
     return response.data;
 };
