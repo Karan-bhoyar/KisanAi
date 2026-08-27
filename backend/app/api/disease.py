@@ -1,7 +1,8 @@
-from fastapi import APIRouter, UploadFile, File, Depends
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from sqlalchemy.orm import Session
 import shutil
 import os
+import uuid
 
 from app.database.session import get_db
 from app.models.user import User
@@ -32,142 +33,320 @@ async def disease_detection(
     current_user: User = Depends(get_current_user)
 ):
 
-    # --------------------------------
-    # Create Upload Folder
-    # --------------------------------
-    os.makedirs("uploads", exist_ok=True)
+    print("=" * 60)
+    print("STEP 1: Disease Detection API called")
+    print("User ID:", current_user.id)
+    print("User Email:", current_user.email)
+    print("Uploaded File:", file.filename)
+    print("Content Type:", file.content_type)
 
-    image_path = os.path.join(
-        "uploads",
-        file.filename
-    )
+    try:
 
-    # --------------------------------
-    # Save Uploaded Image
-    # --------------------------------
-    with open(image_path, "wb") as buffer:
-        shutil.copyfileobj(
-            file.file,
-            buffer
+        # --------------------------------
+        # Validate File
+        # --------------------------------
+
+        if not file.filename:
+            raise HTTPException(
+                status_code=400,
+                detail="No file uploaded."
+            )
+
+        allowed_extensions = {
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp"
+        }
+
+        extension = os.path.splitext(
+            file.filename
+        )[1].lower()
+
+        if extension not in allowed_extensions:
+            raise HTTPException(
+                status_code=400,
+                detail="Please upload JPG, JPEG, PNG or WEBP image."
+            )
+
+        # --------------------------------
+        # Create Upload Folder
+        # --------------------------------
+
+        os.makedirs(
+            "uploads",
+            exist_ok=True
         )
 
-    # --------------------------------
-    # Detect Disease
-    # --------------------------------
-    result = detect_disease(image_path)
+        # --------------------------------
+        # Create Unique Filename
+        # --------------------------------
+        # Prevent two users uploading files
+        # with the same filename.
 
-    # --------------------------------
-    # Save Disease History
-    # --------------------------------
-    history = DiseaseHistory(
-
-        user_id=current_user.id,
-
-        image_url=image_path,
-
-        category=result.get(
-            "category",
-            "Unknown"
-        ),
-
-        disease_name=result.get(
-            "disease_name",
-            "Unknown"
-        ),
-
-        confidence=result.get(
-            "confidence",
-            "0%"
-        ),
-
-        description=result.get(
-            "description",
-            ""
-        ),
-
-        treatment=result.get(
-            "treatment",
-            ""
-        ),
-
-        prevention=result.get(
-            "prevention",
-            "No prevention available."
+        unique_filename = (
+            f"{uuid.uuid4().hex}{extension}"
         )
 
-    )
+        image_path = os.path.join(
+            "uploads",
+            unique_filename
+        )
 
-    db.add(history)
-    db.commit()
-    db.refresh(history)
+        print("STEP 2: Saving image")
+        print("Image Path:", image_path)
 
-    # --------------------------------
-    # Generate PDF Report
-    # --------------------------------
-    pdf_path = generate_pdf(
-        history=history,
-        current_user=current_user
-    )
+        # --------------------------------
+        # Save Uploaded Image
+        # --------------------------------
 
-    # --------------------------------
-    # Send Email
-    # --------------------------------
-    email_sent = send_report_email(
+        with open(
+            image_path,
+            "wb"
+        ) as buffer:
 
-        to_email=current_user.email,
+            shutil.copyfileobj(
+                file.file,
+                buffer
+            )
 
-        farmer_name=current_user.full_name,
+        print("STEP 3: Image saved successfully")
 
-        disease_name=history.disease_name,
+        # --------------------------------
+        # Verify Image Exists
+        # --------------------------------
 
-        confidence=history.confidence,
+        if not os.path.exists(image_path):
 
-        pdf_path=pdf_path
+            print("ERROR: Image file was not created")
 
-    )
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to save uploaded image."
+            )
 
-    # --------------------------------
-    # API Response
-    # --------------------------------
-    return DiseaseResponse(
+        print(
+            "Image Size:",
+            os.path.getsize(image_path),
+            "bytes"
+        )
 
-        category=result.get(
-            "category",
-            "Unknown"
-        ),
+        # --------------------------------
+        # Detect Disease
+        # --------------------------------
 
-        disease_name=result.get(
-            "disease_name",
-            "Unknown"
-        ),
+        print("STEP 4: Starting Gemini disease detection")
 
-        confidence=result.get(
-            "confidence",
-            "Unknown"
-        ),
+        result = detect_disease(
+            image_path
+        )
 
-        description=result.get(
-            "description",
-            ""
-        ),
+        print("STEP 5: Gemini detection completed")
+        print("Detection Result:", result)
 
-        treatment=result.get(
-            "treatment",
-            ""
-        ),
+        # --------------------------------
+        # Validate Detection Result
+        # --------------------------------
 
-        prevention=result.get(
-            "prevention",
-            "No prevention available."
-        ),
+        if not isinstance(result, dict):
 
-        history_id=history.id,
+            print(
+                "ERROR: Detection result is not a dictionary"
+            )
 
-        pdf_url=pdf_path,
+            raise HTTPException(
+                status_code=500,
+                detail="Invalid disease detection response."
+            )
 
-        email_sent=email_sent
+        # --------------------------------
+        # Extract Result Safely
+        # --------------------------------
 
-    )
+        category = str(
+            result.get(
+                "category",
+                "Unknown"
+            )
+        )
+
+        disease_name = str(
+            result.get(
+                "disease_name",
+                "Unknown"
+            )
+        )
+
+        confidence = str(
+            result.get(
+                "confidence",
+                "0%"
+            )
+        )
+
+        description = str(
+            result.get(
+                "description",
+                ""
+            )
+        )
+
+        treatment = str(
+            result.get(
+                "treatment",
+                ""
+            )
+        )
+
+        prevention = str(
+            result.get(
+                "prevention",
+                "No prevention available."
+            )
+        )
+
+        # --------------------------------
+        # Save Disease History
+        # --------------------------------
+
+        print("STEP 6: Creating disease history")
+
+        history = DiseaseHistory(
+
+            user_id=current_user.id,
+
+            image_url=image_path,
+
+            category=category,
+
+            disease_name=disease_name,
+
+            confidence=confidence,
+
+            description=description,
+
+            treatment=treatment,
+
+            prevention=prevention
+
+        )
+
+        db.add(history)
+
+        db.commit()
+
+        db.refresh(history)
+
+        print(
+            "STEP 7: Disease history saved"
+        )
+
+        print(
+            "History ID:",
+            history.id
+        )
+
+        # --------------------------------
+        # Generate PDF Report
+        # --------------------------------
+
+        print("STEP 8: Generating PDF report")
+
+        pdf_path = generate_pdf(
+            history=history,
+            current_user=current_user
+        )
+
+        print(
+            "STEP 9: PDF generated:",
+            pdf_path
+        )
+
+        # --------------------------------
+        # Send Email
+        # --------------------------------
+
+        print("STEP 10: Sending email")
+
+        email_sent = send_report_email(
+
+            to_email=current_user.email,
+
+            farmer_name=current_user.full_name,
+
+            disease_name=history.disease_name,
+
+            confidence=history.confidence,
+
+            pdf_path=pdf_path
+
+        )
+
+        print(
+            "STEP 11: Email result:",
+            email_sent
+        )
+
+        # --------------------------------
+        # API Response
+        # --------------------------------
+
+        print("STEP 12: Preparing API response")
+
+        response = DiseaseResponse(
+
+            category=category,
+
+            disease_name=disease_name,
+
+            confidence=confidence,
+
+            description=description,
+
+            treatment=treatment,
+
+            prevention=prevention,
+
+            history_id=history.id,
+
+            pdf_url=pdf_path,
+
+            email_sent=email_sent
+
+        )
+
+        print(
+            "STEP 13: Disease Detection SUCCESS"
+        )
+
+        print("=" * 60)
+
+        return response
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+
+        # --------------------------------
+        # Rollback Database
+        # --------------------------------
+
+        try:
+            db.rollback()
+        except Exception:
+            pass
+
+        print("=" * 60)
+        print("DISEASE DETECTION ERROR")
+        print("Error Type:", type(e).__name__)
+        print("Error:", str(e))
+        print("=" * 60)
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Disease detection failed: {str(e)}"
+        )
 
 
 # ===================================
@@ -179,6 +358,11 @@ def get_disease_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+
+    print(
+        "Fetching disease history for user:",
+        current_user.id
+    )
 
     history = (
 
@@ -194,6 +378,11 @@ def get_disease_history(
 
         .all()
 
+    )
+
+    print(
+        "Disease history records:",
+        len(history)
     )
 
     return history

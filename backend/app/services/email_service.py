@@ -16,26 +16,29 @@ def send_report_email(
     try:
 
         print("=" * 60)
-        print("Starting Email Service...")
+        print("Starting Email Service")
         print("To:", to_email)
         print("PDF:", pdf_path)
 
-        if not os.path.exists(pdf_path):
+        # Check PDF
+        if not pdf_path or not os.path.exists(pdf_path):
+
             print("PDF NOT FOUND:", pdf_path)
+
             return False
 
+        # Create Email
         msg = EmailMessage()
 
-        msg["Subject"] = "🌾 Kisan AI Disease Detection Report"
-
+        msg["Subject"] = "Kisan AI Disease Detection Report"
         msg["From"] = settings.EMAIL_FROM
-
         msg["To"] = to_email
 
-        msg.set_content(f"""
+        msg.set_content(
+            f"""
 Hello {farmer_name},
 
-Your crop disease analysis has been completed successfully.
+Your crop disease analysis has been completed.
 
 Disease:
 {disease_name}
@@ -43,16 +46,16 @@ Disease:
 Confidence:
 {confidence}
 
-The complete report is attached with this email.
+The complete disease detection report is attached to this email.
 
-Thank you for using Kisan AI 🌾
+Thank you for using Kisan AI.
 
 Regards,
 Kisan AI Team
-""")
+"""
+        )
 
-        print("Attaching PDF...")
-
+        # Attach PDF
         with open(pdf_path, "rb") as pdf:
 
             msg.add_attachment(
@@ -62,47 +65,57 @@ Kisan AI Team
                 filename=os.path.basename(pdf_path)
             )
 
-        print("Connecting SMTP Server...")
+        print("Connecting to SMTP server...")
 
-        server = smtplib.SMTP(
+        # Automatically closes the SMTP connection
+        with smtplib.SMTP(
             settings.SMTP_SERVER,
-            settings.SMTP_PORT
-        )
+            settings.SMTP_PORT,
+            timeout=30
+        ) as server:
 
-        server.ehlo()
+            server.ehlo()
 
-        print("Starting TLS...")
+            print("Starting TLS...")
 
-        server.starttls()
+            server.starttls()
 
-        server.ehlo()
+            server.ehlo()
 
-        print("Logging In...")
+            print("Logging in...")
 
-        server.login(
-            settings.EMAIL_USERNAME,
-            settings.EMAIL_PASSWORD
-        )
+            server.login(
+                settings.EMAIL_USERNAME,
+                settings.EMAIL_PASSWORD
+            )
 
-        print("Login Successful")
+            print("Sending email...")
 
-        print("Sending Email...")
-
-        server.send_message(msg)
-
-        server.quit()
+            server.send_message(msg)
 
         print("EMAIL SENT SUCCESSFULLY")
         print("=" * 60)
 
         return True
 
+    except smtplib.SMTPAuthenticationError as e:
+
+        print("SMTP AUTHENTICATION ERROR")
+        print(e)
+
+        return False
+
+    except smtplib.SMTPException as e:
+
+        print("SMTP ERROR")
+        print(e)
+
+        return False
+
     except Exception as e:
 
-        print("=" * 60)
         print("EMAIL ERROR")
         print(type(e).__name__)
         print(e)
-        print("=" * 60)
 
         return False

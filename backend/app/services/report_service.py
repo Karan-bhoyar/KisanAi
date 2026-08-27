@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from html import escape
 
 from reportlab.lib.units import inch
 from reportlab.lib.styles import getSampleStyleSheet
@@ -11,17 +12,47 @@ from reportlab.platypus import (
 )
 
 
+def clean_text(value):
+    if value is None:
+        return ""
+    return escape(str(value))
+
+
+def format_confidence(value):
+
+    if value is None:
+        return "Unknown"
+
+    value = str(value).strip()
+
+    if value.endswith("%"):
+        return value
+
+    try:
+        number = float(value)
+
+        if number <= 1:
+            return f"{number * 100:.2f}%"
+
+        return f"{number:.2f}%"
+
+    except Exception:
+        return value
+
+
 def generate_pdf(history, current_user):
 
-    # -----------------------------
-    # Create Reports Folder
-    # -----------------------------
+    reports_directory = "uploads/reports"
+
     os.makedirs(
-        "uploads/reports",
+        reports_directory,
         exist_ok=True
     )
 
-    pdf_path = f"uploads/reports/report_{history.id}.pdf"
+    pdf_path = os.path.join(
+        reports_directory,
+        f"report_{history.id}.pdf"
+    )
 
     doc = SimpleDocTemplate(pdf_path)
 
@@ -29,12 +60,10 @@ def generate_pdf(history, current_user):
 
     story = []
 
-    # -----------------------------
     # Title
-    # -----------------------------
     story.append(
         Paragraph(
-            "<b><font size='22'>🌾 Kisan AI</font></b>",
+            "<b><font size='22'>Kisan AI</font></b>",
             styles["Title"]
         )
     )
@@ -48,90 +77,89 @@ def generate_pdf(history, current_user):
 
     story.append(Spacer(1, 20))
 
-    # -----------------------------
     # Farmer Details
-    # -----------------------------
     story.append(
         Paragraph(
-            f"<b>Farmer Name :</b> {current_user.full_name}",
+            f"<b>Farmer Name:</b> {clean_text(current_user.full_name)}",
             styles["BodyText"]
         )
     )
 
     story.append(
         Paragraph(
-            f"<b>Email :</b> {current_user.email}",
+            f"<b>Email:</b> {clean_text(current_user.email)}",
             styles["BodyText"]
         )
     )
 
     story.append(
         Paragraph(
-            f"<b>Date :</b> {datetime.now().strftime('%d-%m-%Y %H:%M')}",
+            f"<b>Date:</b> {datetime.now().strftime('%d-%m-%Y %H:%M')}",
             styles["BodyText"]
         )
     )
 
     story.append(Spacer(1, 15))
 
-    # -----------------------------
     # Uploaded Image
-    # -----------------------------
     if history.image_url and os.path.exists(history.image_url):
 
-        story.append(
-            Paragraph(
-                "<b>Uploaded Crop Image</b>",
-                styles["Heading3"]
+        try:
+            story.append(
+                Paragraph(
+                    "<b>Uploaded Crop Image</b>",
+                    styles["Heading3"]
+                )
             )
-        )
 
-        story.append(
-            Image(
-                history.image_url,
-                width=3 * inch,
-                height=3 * inch
+            story.append(
+                Image(
+                    history.image_url,
+                    width=3 * inch,
+                    height=3 * inch
+                )
             )
-        )
 
-        story.append(Spacer(1, 20))
+            story.append(
+                Spacer(1, 20)
+            )
 
-    # -----------------------------
-    # Confidence Formatting
-    # -----------------------------
-    confidence = history.confidence
+        except Exception as error:
 
-    try:
-        confidence = f"{float(confidence) * 100:.2f}%"
-    except Exception:
-        pass
+            print(
+                f"PDF image error: {error}"
+            )
 
-    # -----------------------------
+    # Confidence
+    confidence = format_confidence(
+        history.confidence
+    )
+
     # Disease Details
-    # -----------------------------
     story.append(
         Paragraph(
-            f"<b>Category :</b> {history.category}",
+            f"<b>Category:</b> {clean_text(history.category)}",
             styles["BodyText"]
         )
     )
 
     story.append(
         Paragraph(
-            f"<b>Disease :</b> {history.disease_name}",
+            f"<b>Disease:</b> {clean_text(history.disease_name)}",
             styles["BodyText"]
         )
     )
 
     story.append(
         Paragraph(
-            f"<b>Confidence :</b> {confidence}",
+            f"<b>Confidence:</b> {confidence}",
             styles["BodyText"]
         )
     )
 
     story.append(Spacer(1, 10))
 
+    # Description
     story.append(
         Paragraph(
             "<b>Description</b>",
@@ -141,13 +169,14 @@ def generate_pdf(history, current_user):
 
     story.append(
         Paragraph(
-            history.description,
+            clean_text(history.description),
             styles["BodyText"]
         )
     )
 
     story.append(Spacer(1, 10))
 
+    # Treatment
     story.append(
         Paragraph(
             "<b>Treatment</b>",
@@ -157,13 +186,14 @@ def generate_pdf(history, current_user):
 
     story.append(
         Paragraph(
-            history.treatment,
+            clean_text(history.treatment),
             styles["BodyText"]
         )
     )
 
     story.append(Spacer(1, 10))
 
+    # Prevention
     story.append(
         Paragraph(
             "<b>Prevention</b>",
@@ -173,7 +203,7 @@ def generate_pdf(history, current_user):
 
     story.append(
         Paragraph(
-            history.prevention,
+            clean_text(history.prevention),
             styles["BodyText"]
         )
     )
@@ -182,14 +212,11 @@ def generate_pdf(history, current_user):
 
     story.append(
         Paragraph(
-            "<b>Generated by Kisan AI 🌾</b>",
+            "<b>Generated by Kisan AI</b>",
             styles["Heading2"]
         )
     )
 
-    # -----------------------------
-    # Save PDF
-    # -----------------------------
     doc.build(story)
 
-    return pdf_path
+    return pdf_path 

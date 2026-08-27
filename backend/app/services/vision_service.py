@@ -6,7 +6,10 @@ from google.genai import types
 
 from app.core.config import settings
 
-client = genai.Client(api_key=settings.GEMINI_API_KEY)
+
+client = genai.Client(
+    api_key=settings.GEMINI_API_KEY
+)
 
 
 def detect_disease(image_path: str):
@@ -18,38 +21,38 @@ You are an expert agricultural plant disease specialist.
 
 Analyze the uploaded crop image carefully.
 
-First classify the image into ONE category:
+First classify the image into exactly ONE category:
 
 1. Healthy
 2. Disease
 3. Pest Damage
 4. Nutrient Deficiency
 
-If it is Disease, identify the exact disease.
+If the category is Disease, identify the exact disease.
 
-If it is Pest Damage, identify the pest damage type.
+If the category is Pest Damage, identify the pest damage type.
 
-If it is Nutrient Deficiency, identify which nutrient is deficient.
+If the category is Nutrient Deficiency, identify the deficient nutrient.
 
-Return ONLY valid JSON.
+Return only valid JSON with this exact structure:
 
 {
-  "category":"",
-  "disease_name":"",
-  "confidence":"",
-  "description":"",
-  "treatment":"",
-  "prevention":""
+    "category": "Disease",
+    "disease_name": "Example disease name",
+    "confidence": "95%",
+    "description": "Short description",
+    "treatment": "Treatment recommendation",
+    "prevention": "Prevention recommendation"
 }
 
 Rules:
-
-- Never return markdown.
-- Never explain anything.
-- Return ONLY JSON.
-- If healthy then:
-  "category":"Healthy"
-  "disease_name":"Healthy Leaf"
+- confidence must always be a string ending with %
+- Never return markdown
+- Never return code blocks
+- Never return any text outside the JSON
+- If the leaf is healthy, use:
+  "category": "Healthy"
+  "disease_name": "Healthy Leaf"
 """
 
     response = client.models.generate_content(
@@ -59,26 +62,41 @@ Rules:
             image
         ],
         config=types.GenerateContentConfig(
-            temperature=0.2
+            temperature=0.2,
+            response_mime_type="application/json"
         )
     )
 
     text = response.text.strip()
 
-    if text.startswith("```"):
-        text = text.replace("```json", "")
-        text = text.replace("```", "").strip()
-
     try:
-        return json.loads(text)
 
-    except Exception:
+        result = json.loads(text)
+
+        confidence = str(
+            result.get("confidence", "0%")
+        )
+
+        if not confidence.endswith("%"):
+            confidence += "%"
+
+        result["confidence"] = confidence
+
+        return result
+
+    except Exception as e:
+
+        print("DISEASE DETECTION JSON ERROR")
+        print(type(e).__name__)
+        print(e)
+        print("RAW RESPONSE:")
+        print(text)
 
         return {
             "category": "Unknown",
             "disease_name": "Unknown",
             "confidence": "0%",
-            "description": text,
-            "treatment": "No treatment available.",
-            "prevention": "Please upload a clearer image."
+            "description": "Unable to analyze the image properly.",
+            "treatment": "Please upload a clearer crop image.",
+            "prevention": "Please upload a clear and properly focused image."
         }
