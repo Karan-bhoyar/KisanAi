@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL =
+    import.meta.env.VITE_API_URL ||
+    "http://127.0.0.1:8000";
 
 export interface WeatherData {
     city: string;
@@ -20,7 +22,13 @@ export async function getWeather(
 
     const token = localStorage.getItem("token");
 
+    console.log(
+        "Weather API URL:",
+        `${API_URL}/api/weather/`
+    );
+
     try {
+
         const response = await axios.get<WeatherData>(
             `${API_URL}/api/weather/`,
             {
@@ -36,6 +44,11 @@ export async function getWeather(
             }
         );
 
+        console.log(
+            "Weather Response:",
+            response.data
+        );
+
         return response.data;
 
     } catch (error) {
@@ -44,7 +57,16 @@ export async function getWeather(
 
             console.error(
                 "Weather API Error:",
-                error.response?.status,
+                error
+            );
+
+            console.error(
+                "Status:",
+                error.response?.status
+            );
+
+            console.error(
+                "Response:",
                 error.response?.data
             );
 
@@ -54,6 +76,7 @@ export async function getWeather(
                 "Weather API Error:",
                 error
             );
+
         }
 
         throw error;
