@@ -1,6 +1,13 @@
 import axios from "axios";
 
-const API_BASE_URL = "http://127.0.0.1:8000/api";
+// ========================================
+// API BASE URL
+// ========================================
+
+const API_BASE_URL =
+    import.meta.env.VITE_API_URL ||
+    "http://127.0.0.1:8000";
+
 
 // ========================================
 // MARKET PRICE TYPE
@@ -28,6 +35,7 @@ export interface MarketPrice {
     source?: string;
 }
 
+
 // ========================================
 // SEARCH PARAMETERS
 // ========================================
@@ -39,6 +47,7 @@ export interface MarketPriceSearchParams {
     market?: string;
 }
 
+
 // ========================================
 // API RESPONSE
 // ========================================
@@ -49,6 +58,7 @@ interface MarketPriceResponse {
     data: MarketPrice;
 }
 
+
 // ========================================
 // GET MARKET PRICE
 // ========================================
@@ -56,26 +66,35 @@ interface MarketPriceResponse {
 export const getMarketPrices = async (
     params: MarketPriceSearchParams
 ): Promise<MarketPrice> => {
+
     try {
-        const response = await axios.get<MarketPriceResponse>(
-            `${API_BASE_URL}/market-price/latest`,
-            {
-                params: {
-                    crop: params.crop,
 
-                    ...(params.state && {
-                        state: params.state,
-                    }),
+        const response =
+            await axios.get<MarketPriceResponse>(
+                `${API_BASE_URL}/api/market-price/latest`,
+                {
+                    params: {
+                        crop: params.crop,
 
-                    ...(params.district && {
-                        district: params.district,
-                    }),
+                        ...(params.state && {
+                            state: params.state,
+                        }),
 
-                    ...(params.market && {
-                        market: params.market,
-                    }),
-                },
-            }
+                        ...(params.district && {
+                            district: params.district,
+                        }),
+
+                        ...(params.market && {
+                            market: params.market,
+                        }),
+                    },
+                }
+            );
+
+
+        console.log(
+            "Market Price API URL:",
+            `${API_BASE_URL}/api/market-price/latest`
         );
 
         console.log(
@@ -83,41 +102,56 @@ export const getMarketPrices = async (
             response.data
         );
 
+
         // ========================================
         // CHECK SUCCESS
         // ========================================
 
         if (!response.data.success) {
+
             throw new Error(
                 "Market price request failed."
             );
+
         }
+
 
         // ========================================
         // CHECK DATA
         // ========================================
 
         if (!response.data.data) {
+
             throw new Error(
                 "No market price data found."
             );
+
         }
 
+
         // ========================================
-        // RETURN DATA + SOURCE
+        // RETURN DATA
         // ========================================
 
         return {
+
             ...response.data.data,
-            source: response.data.source,
+
+            source:
+                response.data.source,
+
         };
 
-    } catch (error) {
+    }
+
+
+    catch (error) {
 
         console.error(
             "Market Price API Error:",
             error
         );
+
 
         // ========================================
         // AXIOS ERROR
@@ -126,44 +160,92 @@ export const getMarketPrices = async (
         if (axios.isAxiosError(error)) {
 
             console.error(
-                "API Response:",
+                "Status:",
+                error.response?.status
+            );
+
+            console.error(
+                "Response:",
                 error.response?.data
             );
 
+
+            // ------------------------------------
             // 404
-            if (error.response?.status === 404) {
+            // ------------------------------------
+
+            if (
+                error.response?.status === 404
+            ) {
+
                 throw new Error(
                     "No market price data found for the selected crop, district and mandi."
                 );
+
             }
 
+
+            // ------------------------------------
+            // 401
+            // ------------------------------------
+
+            if (
+                error.response?.status === 401
+            ) {
+
+                throw new Error(
+                    "Authentication required. Please login again."
+                );
+
+            }
+
+
+            // ------------------------------------
             // 500
-            if (error.response?.status === 500) {
+            // ------------------------------------
+
+            if (
+                error.response?.status === 500
+            ) {
+
                 throw new Error(
                     "Server error while fetching market prices."
                 );
+
             }
 
-            // Other errors
+
+            // ------------------------------------
+            // OTHER API ERRORS
+            // ------------------------------------
+
             const detail =
                 error.response?.data?.detail;
+
 
             throw new Error(
                 detail ||
                 "Unable to fetch market price data."
             );
+
         }
+
 
         // ========================================
         // NORMAL ERROR
         // ========================================
 
         if (error instanceof Error) {
+
             throw error;
+
         }
+
 
         throw new Error(
             "Something went wrong while fetching market prices."
         );
+
     }
+
 };

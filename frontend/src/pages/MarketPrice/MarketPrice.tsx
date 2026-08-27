@@ -7,6 +7,7 @@ import {
     RefreshCw,
     Database,
     Search,
+    TrendingUp,
 } from "lucide-react";
 
 import {
@@ -15,11 +16,6 @@ import {
 } from "../../API/marketPriceApi";
 
 function MarketPrice() {
-
-    // ========================================
-    // PRICE DATA
-    // ========================================
-
     const [price, setPrice] =
         useState<MarketPriceType | null>(null);
 
@@ -29,8 +25,11 @@ function MarketPrice() {
     const [error, setError] =
         useState("");
 
+    const [searched, setSearched] =
+        useState(false);
+
     // ========================================
-    // USER SELECTION
+    // SEARCH FIELDS
     // ========================================
 
     const [crop, setCrop] =
@@ -46,64 +45,49 @@ function MarketPrice() {
         useState("Navapur");
 
     // ========================================
-    // SEARCH MARKET PRICE
+    // LOAD MARKET PRICE
     // ========================================
 
     const loadMarketPrices = async () => {
-
         try {
-
             setLoading(true);
             setError("");
 
             const data = await getMarketPrices({
-
-                crop: crop,
-
-                state: state,
-
-                district:
-                    district || undefined,
-
-                market:
-                    market || undefined,
-
+                crop: crop.trim(),
+                state: state.trim() || undefined,
+                district: district.trim() || undefined,
+                market: market.trim() || undefined,
             });
 
             console.log(
-                "Selected Market Data:",
+                "Market Price API Response:",
                 data
             );
 
             setPrice(data);
+            setSearched(true);
 
         } catch (err) {
-
             console.error(
                 "Market Price Error:",
                 err
             );
 
             setPrice(null);
+            setSearched(true);
 
             if (err instanceof Error) {
-
                 setError(err.message);
-
             } else {
-
                 setError(
-                    "No market price data found for the selected location."
+                    "Unable to fetch market price data."
                 );
-
             }
 
         } finally {
-
             setLoading(false);
-
         }
-
     };
 
     // ========================================
@@ -111,80 +95,87 @@ function MarketPrice() {
     // ========================================
 
     useEffect(() => {
-
         loadMarketPrices();
-
     }, []);
 
     // ========================================
-    // LOADING SCREEN
+    // LOADING
     // ========================================
 
-    if (loading) {
-
+    if (loading && !price) {
         return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-emerald-50 p-6">
 
-            <div className="min-h-screen flex items-center justify-center bg-green-50">
-
-                <div className="text-center">
+                <div className="text-center bg-white rounded-3xl shadow-xl p-10 border border-green-100">
 
                     <RefreshCw
-                        size={35}
-                        className="animate-spin mx-auto mb-4 text-green-600"
+                        size={42}
+                        className="animate-spin mx-auto mb-5 text-green-600"
                     />
 
-                    <p className="text-green-700 font-semibold">
-                        Loading market prices...
+                    <h2 className="text-xl font-bold text-green-700">
+                        Loading Market Prices...
+                    </h2>
+
+                    <p className="text-gray-500 mt-2">
+                        Fetching the latest available mandi data.
                     </p>
 
                 </div>
 
             </div>
-
         );
-
     }
 
-    // ========================================
-    // MAIN UI
-    // ========================================
-
     return (
-
         <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 p-4 md:p-8">
 
-            {/* ========================================
-                HEADER
-            ======================================== */}
+            <div className="max-w-5xl mx-auto">
 
-            <div className="max-w-5xl mx-auto mb-6">
+                {/* ========================================
+                    HEADER
+                ======================================== */}
 
-                <div className="bg-white rounded-3xl shadow-lg p-6 border border-green-100">
+                <div className="bg-white rounded-3xl shadow-lg border border-green-100 p-6 mb-6">
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
 
-                        <div className="w-14 h-14 rounded-2xl bg-green-600 flex items-center justify-center">
+                        <div className="flex items-center gap-4">
 
-                            <IndianRupee
-                                className="text-white"
-                                size={28}
-                            />
+                            <div className="w-14 h-14 rounded-2xl bg-green-600 flex items-center justify-center shadow-lg">
+
+                                <IndianRupee
+                                    className="text-white"
+                                    size={29}
+                                />
+
+                            </div>
+
+                            <div>
+
+                                <h1 className="text-2xl md:text-3xl font-extrabold text-gray-800">
+
+                                    Market Prices
+
+                                </h1>
+
+                                <p className="text-gray-500 mt-1">
+
+                                    Check mandi prices for agricultural crops
+
+                                </p>
+
+                            </div>
 
                         </div>
 
-                        <div>
+                        <div className="flex items-center gap-2 text-green-700 bg-green-50 px-4 py-2 rounded-xl">
 
-                            <h1 className="text-2xl md:text-3xl font-extrabold text-gray-800">
+                            <TrendingUp size={19} />
 
-                                Market Prices
-
-                            </h1>
-
-                            <p className="text-gray-500">
-
-                                Check mandi prices by location
-
-                            </p>
+                            <span className="text-sm font-semibold">
+                                Mandi Price
+                            </span>
 
                         </div>
 
@@ -192,37 +183,47 @@ function MarketPrice() {
 
                 </div>
 
-            </div>
 
+                {/* ========================================
+                    SEARCH
+                ======================================== */}
 
-            {/* ========================================
-                SEARCH SECTION
-            ======================================== */}
+                <div className="bg-white rounded-3xl shadow-lg border border-green-100 p-6 mb-6">
 
-            <div className="max-w-5xl mx-auto mb-6">
+                    <div className="flex items-center gap-3 mb-5">
 
-                <div className="bg-white rounded-3xl shadow-lg border border-green-100 p-6">
+                        <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
 
-                    <h2 className="text-xl font-bold text-gray-800 mb-5">
+                            <Search
+                                size={20}
+                                className="text-green-700"
+                            />
 
-                        Search Market Price
+                        </div>
 
-                    </h2>
+                        <div>
+
+                            <h2 className="text-xl font-bold text-gray-800">
+                                Search Market Price
+                            </h2>
+
+                            <p className="text-sm text-gray-500">
+                                Select crop and mandi location
+                            </p>
+
+                        </div>
+
+                    </div>
 
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
-
-                        {/* ========================================
-                            CROP
-                        ======================================== */}
+                        {/* CROP */}
 
                         <div>
 
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-
                                 Crop
-
                             </label>
 
                             <select
@@ -230,7 +231,7 @@ function MarketPrice() {
                                 onChange={(e) =>
                                     setCrop(e.target.value)
                                 }
-                                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-green-500"
+                                className="w-full border border-gray-300 rounded-xl px-4 py-3 bg-white outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                             >
 
                                 <option value="Wheat">
@@ -262,16 +263,12 @@ function MarketPrice() {
                         </div>
 
 
-                        {/* ========================================
-                            STATE
-                        ======================================== */}
+                        {/* STATE */}
 
                         <div>
 
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-
                                 State
-
                             </label>
 
                             <select
@@ -279,7 +276,7 @@ function MarketPrice() {
                                 onChange={(e) =>
                                     setState(e.target.value)
                                 }
-                                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-green-500"
+                                className="w-full border border-gray-300 rounded-xl px-4 py-3 bg-white outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                             >
 
                                 <option value="Maharashtra">
@@ -291,16 +288,12 @@ function MarketPrice() {
                         </div>
 
 
-                        {/* ========================================
-                            CITY / DISTRICT
-                        ======================================== */}
+                        {/* DISTRICT */}
 
                         <div>
 
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-
-                                City / District
-
+                                District
                             </label>
 
                             <select
@@ -308,7 +301,7 @@ function MarketPrice() {
                                 onChange={(e) =>
                                     setDistrict(e.target.value)
                                 }
-                                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-green-500"
+                                className="w-full border border-gray-300 rounded-xl px-4 py-3 bg-white outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                             >
 
                                 <option value="">
@@ -348,16 +341,12 @@ function MarketPrice() {
                         </div>
 
 
-                        {/* ========================================
-                            MANDI
-                        ======================================== */}
+                        {/* MANDI */}
 
                         <div>
 
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-
                                 Mandi
-
                             </label>
 
                             <input
@@ -367,7 +356,7 @@ function MarketPrice() {
                                     setMarket(e.target.value)
                                 }
                                 placeholder="e.g. Navapur"
-                                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-green-500"
+                                className="w-full border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                             />
 
                         </div>
@@ -375,93 +364,124 @@ function MarketPrice() {
                     </div>
 
 
-                    {/* ========================================
-                        SEARCH BUTTON
-                    ======================================== */}
+                    {/* SEARCH BUTTON */}
 
                     <button
                         onClick={loadMarketPrices}
                         disabled={loading}
-                        className="mt-5 w-full bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition"
+                        className="mt-5 w-full bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 disabled:opacity-60 disabled:cursor-not-allowed text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md"
                     >
 
-                        <Search size={19} />
+                        {loading ? (
+                            <>
+                                <RefreshCw
+                                    size={19}
+                                    className="animate-spin"
+                                />
 
-                        Search Market Price
+                                Fetching Prices...
+                            </>
+                        ) : (
+                            <>
+                                <Search size={19} />
+
+                                Search Market Price
+                            </>
+                        )}
 
                     </button>
 
                 </div>
 
-            </div>
+
+                {/* ========================================
+                    ERROR
+                ======================================== */}
+
+                {error && (
+
+                    <div className="bg-red-50 border border-red-200 rounded-2xl p-5 mb-6">
+
+                        <div className="flex items-start gap-3">
+
+                            <div className="text-red-600 text-xl">
+                                ⚠️
+                            </div>
+
+                            <div>
+
+                                <p className="font-bold text-red-700">
+                                    Market Price Error
+                                </p>
+
+                                <p className="text-sm text-red-600 mt-1">
+                                    {error}
+                                </p>
+
+                                <p className="text-xs text-red-500 mt-3">
+                                    Try selecting another crop, district,
+                                    or mandi.
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                )}
 
 
-            {/* ========================================
-                ERROR
-            ======================================== */}
+                {/* ========================================
+                    EMPTY STATE
+                ======================================== */}
 
-            {error && (
+                {!price && !error && searched && (
 
-                <div className="max-w-5xl mx-auto mb-6">
+                    <div className="bg-white rounded-3xl shadow-lg p-8 text-center">
 
-                    <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-red-600">
+                        <Database
+                            size={45}
+                            className="mx-auto text-gray-400 mb-4"
+                        />
 
-                        <p className="font-semibold">
-                            Market Price Error
-                        </p>
+                        <h2 className="text-xl font-bold text-gray-700">
+                            No Market Data Found
+                        </h2>
 
-                        <p className="text-sm mt-1">
-                            {error}
-                        </p>
-
-                        <p className="text-xs mt-3 text-red-500">
-
-                            Try:
-
-                            {" "}Wheat → Maharashtra → Nandurbar → Navapur
-
+                        <p className="text-gray-500 mt-2">
+                            Try a different crop, district, or mandi.
                         </p>
 
                     </div>
 
-                </div>
-
-            )}
+                )}
 
 
-            {/* ========================================
-                PRICE RESULT
-            ======================================== */}
+                {/* ========================================
+                    RESULT
+                ======================================== */}
 
-            {price && (
-
-                <div className="max-w-5xl mx-auto">
+                {price && (
 
                     <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
 
+                        {/* CROP + LOCATION */}
 
-                        {/* ========================================
-                            CROP + LOCATION
-                        ======================================== */}
-
-                        <div className="p-6 md:p-8 border-b">
+                        <div className="p-6 md:p-8 border-b border-gray-100">
 
                             <div className="flex flex-col md:flex-row md:justify-between gap-5">
 
                                 <div>
 
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex flex-wrap items-center gap-3">
 
-                                        <h2 className="text-3xl font-bold text-gray-800">
-
+                                        <h2 className="text-3xl font-extrabold text-gray-800">
                                             {price.crop}
-
                                         </h2>
 
                                         <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold">
-
                                             MANDI PRICE
-
                                         </span>
 
                                     </div>
@@ -472,10 +492,7 @@ function MarketPrice() {
                                         Variety:{" "}
 
                                         <span className="font-semibold text-gray-700">
-
-                                            {price.variety ||
-                                                "Not available"}
-
+                                            {price.variety || "Not available"}
                                         </span>
 
                                     </p>
@@ -489,13 +506,9 @@ function MarketPrice() {
                                         />
 
                                         <span>
-
                                             {price.market},{" "}
-
                                             {price.district},{" "}
-
                                             {price.state}
-
                                         </span>
 
                                     </div>
@@ -505,19 +518,14 @@ function MarketPrice() {
 
                                 {/* GRADE */}
 
-                                <div className="bg-gray-50 rounded-2xl px-5 py-4">
+                                <div className="bg-gray-50 rounded-2xl px-6 py-4 min-w-[140px]">
 
                                     <p className="text-xs text-gray-500">
-
                                         Grade
-
                                     </p>
 
-                                    <p className="font-bold text-gray-800">
-
-                                        {price.grade ||
-                                            "Not available"}
-
+                                    <p className="font-bold text-gray-800 mt-1">
+                                        {price.grade || "Not available"}
                                     </p>
 
                                 </div>
@@ -527,98 +535,80 @@ function MarketPrice() {
                         </div>
 
 
-                        {/* ========================================
-                            PRICE
-                        ======================================== */}
+                        {/* PRICE SECTION */}
 
                         <div className="p-6 md:p-8">
 
-
-                            {/* MODAL PRICE */}
-
-                            <div className="bg-gradient-to-r from-green-600 to-emerald-500 rounded-3xl p-6 text-white">
+                            <div className="bg-gradient-to-r from-green-600 to-emerald-500 rounded-3xl p-6 md:p-7 text-white shadow-lg">
 
                                 <p className="text-sm opacity-90">
-
                                     Modal Price
-
                                 </p>
 
                                 <div className="flex items-center mt-2">
 
                                     <IndianRupee size={30} />
 
-                                    <span className="text-4xl font-extrabold">
+                                    <span className="text-4xl md:text-5xl font-extrabold">
 
                                         {Number(
                                             price.modal_price || 0
-                                        ).toLocaleString(
-                                            "en-IN"
-                                        )}
+                                        ).toLocaleString("en-IN")}
 
                                     </span>
 
                                 </div>
 
-                                <p className="text-sm mt-2">
-
+                                <p className="text-sm mt-2 opacity-90">
                                     Price per quintal
-
                                 </p>
 
                             </div>
 
 
-                            {/* ========================================
-                                MIN MAX
-                            ======================================== */}
+                            {/* MIN MAX */}
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-
-
-                                {/* MINIMUM */}
 
                                 <div className="bg-red-50 border border-red-100 rounded-2xl p-5">
 
                                     <p className="text-sm text-gray-500">
-
                                         Minimum Price
-
                                     </p>
 
-                                    <p className="text-2xl font-bold text-red-600">
+                                    <p className="text-2xl font-bold text-red-600 mt-1">
 
                                         ₹
                                         {Number(
                                             price.minimum_price || 0
-                                        ).toLocaleString(
-                                            "en-IN"
-                                        )}
+                                        ).toLocaleString("en-IN")}
 
+                                    </p>
+
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        Per quintal
                                     </p>
 
                                 </div>
 
 
-                                {/* MAXIMUM */}
-
                                 <div className="bg-green-50 border border-green-100 rounded-2xl p-5">
 
                                     <p className="text-sm text-gray-500">
-
                                         Maximum Price
-
                                     </p>
 
-                                    <p className="text-2xl font-bold text-green-600">
+                                    <p className="text-2xl font-bold text-green-600 mt-1">
 
                                         ₹
                                         {Number(
                                             price.maximum_price || 0
-                                        ).toLocaleString(
-                                            "en-IN"
-                                        )}
+                                        ).toLocaleString("en-IN")}
 
+                                    </p>
+
+                                    <p className="text-xs text-gray-400 mt-1">
+                                        Per quintal
                                     </p>
 
                                 </div>
@@ -626,36 +616,39 @@ function MarketPrice() {
                             </div>
 
 
-                            {/* ========================================
-                                INFORMATION
-                            ======================================== */}
+                            {/* INFORMATION */}
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-6">
 
-
-                                {/* MARKET LOCATION */}
+                                {/* MARKET */}
 
                                 <div className="bg-gray-50 rounded-2xl p-5">
 
-                                    <p className="text-xs text-gray-500">
+                                    <div className="flex items-start gap-3">
 
-                                        Market Location
+                                        <MapPin
+                                            size={20}
+                                            className="text-green-600 mt-1"
+                                        />
 
-                                    </p>
+                                        <div>
 
-                                    <p className="font-semibold">
+                                            <p className="text-xs text-gray-500">
+                                                Market Location
+                                            </p>
 
-                                        {price.market}
+                                            <p className="font-semibold text-gray-800 mt-1">
+                                                {price.market}
+                                            </p>
 
-                                    </p>
+                                            <p className="text-sm text-gray-500">
+                                                {price.district},{" "}
+                                                {price.state}
+                                            </p>
 
-                                    <p className="text-sm text-gray-500">
+                                        </div>
 
-                                        {price.district},{" "}
-
-                                        {price.state}
-
-                                    </p>
+                                    </div>
 
                                 </div>
 
@@ -664,25 +657,21 @@ function MarketPrice() {
 
                                 <div className="bg-gray-50 rounded-2xl p-5">
 
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-start gap-3">
 
                                         <CalendarDays
                                             size={20}
-                                            className="text-green-600"
+                                            className="text-green-600 mt-1"
                                         />
 
                                         <div>
 
                                             <p className="text-xs text-gray-500">
-
                                                 Arrival Date
-
                                             </p>
 
-                                            <p className="font-semibold">
-
-                                                {price.arrival_date}
-
+                                            <p className="font-semibold text-gray-800 mt-1">
+                                                {price.arrival_date || "Not available"}
                                             </p>
 
                                         </div>
@@ -697,21 +686,15 @@ function MarketPrice() {
                                 <div className="bg-gray-50 rounded-2xl p-5">
 
                                     <p className="text-xs text-gray-500">
-
                                         Record Year
-
                                     </p>
 
-                                    <p className="text-xl font-bold">
-
-                                        {price.record_year}
-
+                                    <p className="text-xl font-bold text-gray-800 mt-1">
+                                        {price.record_year || "Not available"}
                                     </p>
 
                                     <p className="text-xs text-gray-500 mt-1">
-
-                                        {price.data_status}
-
+                                        {price.data_status || "Data status unavailable"}
                                     </p>
 
                                 </div>
@@ -721,26 +704,21 @@ function MarketPrice() {
 
                                 <div className="bg-gray-50 rounded-2xl p-5">
 
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-start gap-3">
 
                                         <Database
                                             size={20}
-                                            className="text-blue-600"
+                                            className="text-blue-600 mt-1"
                                         />
 
                                         <div>
 
                                             <p className="text-xs text-gray-500">
-
                                                 Data Source
-
                                             </p>
 
-                                            <p className="font-semibold">
-
-                                                {price.source ||
-                                                    "data.gov.in"}
-
+                                            <p className="font-semibold text-gray-800 mt-1">
+                                                {price.source || "data.gov.in"}
                                             </p>
 
                                         </div>
@@ -755,14 +733,12 @@ function MarketPrice() {
 
                     </div>
 
-                </div>
+                )}
 
-            )}
+            </div>
 
         </div>
-
     );
-
 }
 
 export default MarketPrice;
