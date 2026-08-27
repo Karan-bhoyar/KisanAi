@@ -14,39 +14,68 @@ import {
 } from "lucide-react";
 
 
+// ==========================================
+// Disease Result Type
+// ==========================================
+
 interface DiseaseResultType {
+
+    category: string;
+
     disease_name: string;
+
     confidence: string;
+
     description: string;
+
     treatment: string;
+
     prevention: string;
+
     history_id: number;
+
+    pdf_url: string;
+
+    email_sent: boolean;
+
 }
 
+
+// ==========================================
+// Disease Detection Page
+// ==========================================
 
 function DiseaseDetectionPage() {
 
     const navigate = useNavigate();
 
+
     const [image, setImage] =
         useState<File | null>(null);
+
 
     const [result, setResult] =
         useState<DiseaseResultType | null>(null);
 
+
     const [loading, setLoading] =
         useState(false);
 
+
+    // ==========================================
+    // Detect Disease
+    // ==========================================
 
     const handlePredict = async () => {
 
         if (!image) {
 
             alert(
-                "Please upload an image first"
+                "Please upload an image first."
             );
 
             return;
+
         }
 
 
@@ -54,22 +83,70 @@ function DiseaseDetectionPage() {
 
             setLoading(true);
 
+            setResult(null);
+
+
+            console.log(
+                "Starting disease detection..."
+            );
+
+            console.log(
+                "Image:",
+                image.name
+            );
+
+
             const data =
                 await predictDisease(image);
+
+
+            console.log(
+                "Disease detection response:",
+                data
+            );
+
 
             setResult(data);
 
         }
-        catch (error) {
+        catch (error: any) {
 
             console.error(
                 "Disease Detection Error:",
                 error
             );
 
-            alert(
-                "Disease detection failed"
-            );
+
+            // Axios error response
+
+            if (error?.response) {
+
+                console.error(
+                    "Status:",
+                    error.response.status
+                );
+
+                console.error(
+                    "Backend response:",
+                    error.response.data
+                );
+
+
+                const message =
+                    error.response.data?.detail ||
+                    "Disease detection failed.";
+
+                alert(message);
+
+            }
+            else {
+
+                alert(
+                    error?.message ||
+                    "Disease detection failed. Please try again."
+                );
+
+            }
 
         }
         finally {
@@ -80,6 +157,10 @@ function DiseaseDetectionPage() {
 
     };
 
+
+    // ==========================================
+    // UI
+    // ==========================================
 
     return (
 
@@ -97,7 +178,9 @@ function DiseaseDetectionPage() {
             "
         >
 
-            {/* Floating Background */}
+            {/* =================================
+                Floating Background
+            ================================= */}
 
             <div
                 className="
@@ -141,6 +224,10 @@ function DiseaseDetectionPage() {
             </div>
 
 
+            {/* =================================
+                Main Container
+            ================================= */}
+
             <div
                 className="
                     relative
@@ -149,7 +236,9 @@ function DiseaseDetectionPage() {
                 "
             >
 
-                {/* HEADER */}
+                {/* =================================
+                    HEADER
+                ================================= */}
 
                 <div
                     className="
@@ -198,6 +287,8 @@ function DiseaseDetectionPage() {
                     </div>
 
 
+                    {/* History Button */}
+
                     <button
                         onClick={() =>
                             navigate("/disease/history")
@@ -226,7 +317,9 @@ function DiseaseDetectionPage() {
                 </div>
 
 
-                {/* UPLOAD */}
+                {/* =================================
+                    IMAGE UPLOAD
+                ================================= */}
 
                 <DiseaseUpload
                     image={image}
@@ -234,7 +327,9 @@ function DiseaseDetectionPage() {
                 />
 
 
-                {/* DETECT BUTTON */}
+                {/* =================================
+                    DETECT BUTTON
+                ================================= */}
 
                 <div
                     className="
@@ -245,11 +340,8 @@ function DiseaseDetectionPage() {
                 >
 
                     <button
-
                         onClick={handlePredict}
-
                         disabled={loading}
-
                         className="
                             flex
                             items-center
@@ -269,10 +361,10 @@ function DiseaseDetectionPage() {
                             disabled:opacity-50
                             disabled:cursor-not-allowed
                         "
-
                     >
 
                         <ScanLine size={22} />
+
 
                         {
                             loading
@@ -285,7 +377,9 @@ function DiseaseDetectionPage() {
                 </div>
 
 
-                {/* RESULT */}
+                {/* =================================
+                    RESULT
+                ================================= */}
 
                 <div
                     className="

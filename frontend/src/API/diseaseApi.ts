@@ -1,9 +1,24 @@
 import axios from "axios";
 
 
-const API_URL = "http://127.0.0.1:8000";
+// ==========================================
+// API URL
+// ==========================================
+
+// Vercel:
+// VITE_API_URL=https://your-railway-backend.up.railway.app
+//
+// Local development:
+// VITE_API_URL=http://127.0.0.1:8000
+
+const API_URL =
+    import.meta.env.VITE_API_URL ||
+    "http://127.0.0.1:8000";
 
 
+// ==========================================
+// Disease Response
+// ==========================================
 
 interface DiseaseResponse {
 
@@ -21,37 +36,73 @@ interface DiseaseResponse {
 
     history_id: number;
 
+    pdf_url: string;
+
+    email_sent: boolean;
+
 }
 
 
+// ==========================================
+// Disease History Response
+// ==========================================
 
 interface DiseaseHistoryResponse {
 
     id: number;
 
+    user_id: number;
+
     image_url: string;
 
+    category: string;
+
     disease_name: string;
+
+    confidence: string;
 
     description: string;
 
     treatment: string;
+
+    prevention: string;
 
     created_at: string;
 
 }
 
 
+// ==========================================
+// Get Authentication Token
+// ==========================================
 
+const getToken = (): string => {
+
+    const token =
+        localStorage.getItem("token");
+
+    if (!token) {
+
+        throw new Error(
+            "Authentication token not found"
+        );
+
+    }
+
+    return token;
+
+};
+
+
+// ==========================================
 // Disease Prediction API
+// ==========================================
 
 export const predictDisease = async (
     image: File
 ): Promise<DiseaseResponse> => {
 
-
     const formData = new FormData();
-
 
     formData.append(
         "file",
@@ -59,75 +110,161 @@ export const predictDisease = async (
     );
 
 
-    const token = localStorage.getItem("token");
+    const token = getToken();
 
 
-    if (!token) {
-        throw new Error("Authentication token not found");
+    try {
+
+        console.log(
+            "Disease API URL:",
+            `${API_URL}/disease/`
+        );
+
+        const response =
+            await axios.post<DiseaseResponse>(
+
+                `${API_URL}/disease/`,
+
+                formData,
+
+                {
+                    headers: {
+
+                        Authorization:
+                            `Bearer ${token}`
+
+                    }
+
+                }
+
+            );
+
+
+        console.log(
+            "Disease API Response:",
+            response.data
+        );
+
+
+        return response.data;
+
     }
+    catch (error: any) {
+
+        console.error(
+            "Disease API Error:",
+            error
+        );
 
 
+        if (error.response) {
 
-    const response = await axios.post<DiseaseResponse>(
+            console.error(
+                "Status:",
+                error.response.status
+            );
 
-        `${API_URL}/disease/`,
+            console.error(
+                "Response:",
+                error.response.data
+            );
 
-        formData,
+        }
+        else if (error.request) {
 
-        {
-
-            headers: {
-
-                Authorization: `Bearer ${token}`,
-
-                "Content-Type": "multipart/form-data"
-
-            }
+            console.error(
+                "No response received from Railway:",
+                error.request
+            );
 
         }
 
-    );
 
+        throw error;
 
-    return response.data;
+    }
 
 };
 
 
-
-
-
+// ==========================================
 // Disease History API
+// ==========================================
 
-export const getDiseaseHistory = async (): Promise<DiseaseHistoryResponse[]> => {
+export const getDiseaseHistory =
+    async (): Promise<DiseaseHistoryResponse[]> => {
 
-
-    const token = localStorage.getItem("token");
-
-
-    if (!token) {
-        throw new Error("Authentication token not found");
-    }
+        const token = getToken();
 
 
+        try {
 
-    const response = await axios.get<DiseaseHistoryResponse[]>(
+            console.log(
+                "Disease History API URL:",
+                `${API_URL}/disease/history`
+            );
 
-        `${API_URL}/disease/history`,
 
-        {
+            const response =
+                await axios.get<DiseaseHistoryResponse[]>(
 
-            headers: {
+                    `${API_URL}/disease/history`,
 
-                Authorization: `Bearer ${token}`
+                    {
+                        headers: {
+
+                            Authorization:
+                                `Bearer ${token}`
+
+                        }
+
+                    }
+
+                );
+
+
+            console.log(
+                "Disease History Response:",
+                response.data
+            );
+
+
+            return response.data;
+
+        }
+        catch (error: any) {
+
+            console.error(
+                "Disease History API Error:",
+                error
+            );
+
+
+            if (error.response) {
+
+                console.error(
+                    "Status:",
+                    error.response.status
+                );
+
+                console.error(
+                    "Response:",
+                    error.response.data
+                );
+
+            }
+            else if (error.request) {
+
+                console.error(
+                    "No response received from Railway:",
+                    error.request
+                );
 
             }
 
+
+            throw error;
+
         }
 
-    );
-
-
-    return response.data;
-
-};
+    };
