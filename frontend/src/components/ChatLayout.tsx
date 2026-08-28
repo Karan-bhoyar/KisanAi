@@ -28,6 +28,7 @@ import {
 
 import MessageBubble from "./MessageBubble";
 import ChatInput from "./ChatInput";
+import farmerImage from "./image/farmer.png";
 
 import {
     sendMessage,
@@ -1219,15 +1220,16 @@ function ChatLayout() {
                                 "
                             >
 
-                                <img
-                                    src="/src/components/farmer.png"
-                                    alt="Indian Farmer"
-                                    className="
-                                        w-full
-                                        h-full
-                                        object-cover
-                                    "
-                                />
+                               <img
+    src={farmerImage}
+    alt="Indian Farmer"
+    className="
+        w-full
+        h-full
+        object-cover
+        object-center
+    "
+/>
 
                             </motion.div>
 
