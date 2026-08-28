@@ -2392,43 +2392,7 @@ function ChatLayout() {
             "
         >
 
-            <span className="relative flex h-2.5 w-2.5">
-
-                <motion.span
-                    animate={{
-                        scale: [1, 2, 1],
-                        opacity: [0.7, 0, 0.7],
-                    }}
-                    transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                    }}
-                    className="
-                        absolute
-                        inline-flex
-                        h-full
-                        w-full
-                        rounded-full
-                        bg-green-400
-                    "
-                />
-
-                <span
-                    className="
-                        relative
-                        inline-flex
-                        h-2.5
-                        w-2.5
-                        rounded-full
-                        bg-green-500
-                    "
-                />
-
-            </span>
-
-            <span>
-                KrishiSetu AI is ready to assist your farming journey
-            </span>
+           
 
         </motion.div>
 
