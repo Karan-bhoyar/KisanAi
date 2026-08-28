@@ -1,5 +1,10 @@
 import { useState, useRef } from "react";
-import { Mic, Send, Square } from "lucide-react";
+import {
+    Mic,
+    Send,
+    Square,
+    LoaderCircle,
+} from "lucide-react";
 import axios from "axios";
 
 interface Props {
@@ -11,11 +16,26 @@ interface Props {
 
 function ChatInput({ onSend }: Props) {
 
+    // ======================================================
+    // STATE
+    // ======================================================
+
     const [message, setMessage] = useState("");
+
     const [language, setLanguage] =
         useState<"hi" | "mr" | "en">("hi");
 
-    const [recording, setRecording] = useState(false);
+    // Recording microphone
+    const [recording, setRecording] =
+        useState(false);
+
+    // Voice is being sent to backend / STT
+    const [processingVoice, setProcessingVoice] =
+        useState(false);
+
+    // ======================================================
+    // REFS
+    // ======================================================
 
     const mediaRecorder =
         useRef<MediaRecorder | null>(null);
@@ -39,6 +59,12 @@ function ChatInput({ onSend }: Props) {
 
     const startRecording = async () => {
 
+        // Don't start another recording while
+        // voice processing is running
+        if (processingVoice) {
+            return;
+        }
+
         try {
 
             const stream =
@@ -48,12 +74,20 @@ function ChatInput({ onSend }: Props) {
 
             streamRef.current = stream;
 
+            // ==================================================
+            // CREATE RECORDER
+            // ==================================================
+
             const recorder =
                 new MediaRecorder(stream);
 
             mediaRecorder.current = recorder;
 
             audioChunks.current = [];
+
+            // ==================================================
+            // COLLECT AUDIO
+            // ==================================================
 
             recorder.ondataavailable = (event) => {
 
@@ -67,7 +101,20 @@ function ChatInput({ onSend }: Props) {
 
             };
 
+            // ==================================================
+            // RECORDING STOPPED
+            // ==================================================
+
             recorder.onstop = async () => {
+
+                // Immediately change UI:
+                // recording -> processing
+                setRecording(false);
+                setProcessingVoice(true);
+
+                // ==================================================
+                // CREATE AUDIO BLOB
+                // ==================================================
 
                 const audioBlob =
                     new Blob(
@@ -76,6 +123,10 @@ function ChatInput({ onSend }: Props) {
                             type: "audio/webm",
                         }
                     );
+
+                // ==================================================
+                // FORM DATA
+                // ==================================================
 
                 const formData =
                     new FormData();
@@ -93,6 +144,10 @@ function ChatInput({ onSend }: Props) {
 
                 try {
 
+                    // ==================================================
+                    // TOKEN
+                    // ==================================================
+
                     const token =
                         localStorage.getItem("token");
 
@@ -108,6 +163,10 @@ function ChatInput({ onSend }: Props) {
                         return;
 
                     }
+
+                    // ==================================================
+                    // SEND TO STT API
+                    // ==================================================
 
                     const response =
                         await axios.post(
@@ -130,8 +189,9 @@ function ChatInput({ onSend }: Props) {
                         response.data
                     );
 
-                    // Backend response
-                    // expected: { text: "..." }
+                    // ==================================================
+                    // GET TRANSCRIBED TEXT
+                    // ==================================================
 
                     const text =
                         response.data.text ||
@@ -140,6 +200,8 @@ function ChatInput({ onSend }: Props) {
 
                     if (text) {
 
+                        // Put recognized voice
+                        // inside input
                         setMessage(text);
 
                     } else {
@@ -147,6 +209,10 @@ function ChatInput({ onSend }: Props) {
                         console.error(
                             "Voice text not received:",
                             response.data
+                        );
+
+                        alert(
+                            "Voice text could not be recognized."
                         );
 
                     }
@@ -162,15 +228,39 @@ function ChatInput({ onSend }: Props) {
                         error.message
                     );
 
-                    alert(
-                        "Voice service failed. Please try again."
-                    );
+                    if (
+                        error.response?.status === 401
+                    ) {
+
+                        alert(
+                            "Session expired. Please login again."
+                        );
+
+                        localStorage.removeItem(
+                            "token"
+                        );
+
+                        window.location.href =
+                            "/login";
+
+                    }
+
+                    else {
+
+                        alert(
+                            "Voice service failed. Please try again."
+                        );
+
+                    }
 
                 }
 
                 finally {
 
-                    // Stop microphone
+                    // ==================================================
+                    // STOP MICROPHONE
+                    // ==================================================
+
                     streamRef.current
                         ?.getTracks()
                         .forEach(
@@ -178,9 +268,26 @@ function ChatInput({ onSend }: Props) {
                                 track.stop()
                         );
 
+                    streamRef.current = null;
+
+                    mediaRecorder.current = null;
+
+                    audioChunks.current = [];
+
+                    // ==================================================
+                    // IMPORTANT
+                    // REMOVE CIRCULAR LOADER
+                    // ==================================================
+
+                    setProcessingVoice(false);
+
                 }
 
             };
+
+            // ==================================================
+            // START MEDIA RECORDER
+            // ==================================================
 
             recorder.start();
 
@@ -199,6 +306,18 @@ function ChatInput({ onSend }: Props) {
                 "Please allow microphone permission."
             );
 
+            // Make sure microphone is stopped
+            streamRef.current
+                ?.getTracks()
+                .forEach(
+                    (track) =>
+                        track.stop()
+                );
+
+            streamRef.current = null;
+
+            setRecording(false);
+
         }
 
     };
@@ -209,16 +328,24 @@ function ChatInput({ onSend }: Props) {
 
     const stopRecording = () => {
 
+        if (!mediaRecorder.current) {
+            return;
+        }
+
         if (
-            mediaRecorder.current &&
-            mediaRecorder.current.state !== "inactive"
+            mediaRecorder.current.state !==
+            "inactive"
         ) {
 
             mediaRecorder.current.stop();
 
         }
 
-        setRecording(false);
+        // DON'T set processingVoice here.
+
+        // recorder.onstop will set:
+        // recording = false
+        // processingVoice = true
 
     };
 
@@ -232,6 +359,11 @@ function ChatInput({ onSend }: Props) {
             message.trim();
 
         if (!trimmedMessage) {
+            return;
+        }
+
+        // Don't send while voice is processing
+        if (processingVoice) {
             return;
         }
 
@@ -264,19 +396,31 @@ function ChatInput({ onSend }: Props) {
             className="
                 p-4
                 md:p-5
+
                 flex
                 gap-3
+
                 bg-white
+
                 border-t
+                border-green-100
+
                 items-center
+
                 flex-wrap
             "
         >
 
-            {/* LANGUAGE */}
+            {/* ==================================================
+                LANGUAGE
+            ================================================== */}
 
             <select
                 value={language}
+                disabled={
+                    recording ||
+                    processingVoice
+                }
                 onChange={(e) =>
                     setLanguage(
                         e.target.value as
@@ -285,10 +429,21 @@ function ChatInput({ onSend }: Props) {
                 }
                 className="
                     border
+                    border-gray-200
                     rounded-xl
+
                     px-3
                     py-3
+
                     text-sm
+
+                    outline-none
+
+                    focus:ring-2
+                    focus:ring-green-500
+
+                    disabled:opacity-50
+                    disabled:cursor-not-allowed
                 "
             >
 
@@ -306,10 +461,16 @@ function ChatInput({ onSend }: Props) {
 
             </select>
 
-            {/* INPUT */}
+
+            {/* ==================================================
+                INPUT
+            ================================================== */}
 
             <input
                 value={message}
+                disabled={
+                    processingVoice
+                }
                 onChange={(e) =>
                     setMessage(
                         e.target.value
@@ -329,63 +490,198 @@ function ChatInput({ onSend }: Props) {
                     }
 
                 }}
-                placeholder="Ask farming question..."
+                placeholder={
+                    processingVoice
+                        ? "Converting voice to text..."
+                        : recording
+                        ? "Listening..."
+                        : "Ask farming question..."
+                }
                 className="
                     flex-1
-                    min-w-[200px]
+
+                    min-w-[180px]
+
                     border
+                    border-gray-200
+
                     rounded-xl
+
                     px-4
                     py-3
+
                     outline-none
+
                     focus:ring-2
                     focus:ring-green-500
+
+                    disabled:bg-gray-50
+                    disabled:cursor-not-allowed
                 "
             />
 
-            {/* MICROPHONE */}
+
+            {/* ==================================================
+                MICROPHONE / VOICE PROCESSING
+            ================================================== */}
 
             <button
                 type="button"
+                disabled={
+                    processingVoice
+                }
                 onClick={
                     recording
                         ? stopRecording
                         : startRecording
                 }
                 className={`
-                    p-3
+                    relative
+
+                    w-12
+                    h-12
+
+                    flex
+                    items-center
+                    justify-center
+
                     rounded-full
+
                     text-white
+
+                    shadow-md
+
+                    transition-all
+
                     ${
                         recording
-                            ? "bg-red-500 animate-pulse"
-                            : "bg-green-700"
+                            ? "bg-red-500 hover:bg-red-600"
+                            : processingVoice
+                            ? "bg-green-600 cursor-not-allowed"
+                            : "bg-green-700 hover:bg-green-800"
                     }
                 `}
             >
 
-                {recording ? (
-                    <Square size={20} />
-                ) : (
-                    <Mic size={20} />
+                {/* ==================================================
+                    RECORDING
+                ================================================== */}
+
+                {recording && (
+
+                    <>
+                        {/* OUTER PULSE */}
+
+                        <span
+                            className="
+                                absolute
+                                inset-0
+                                rounded-full
+                                bg-red-400/40
+                                animate-ping
+                            "
+                        />
+
+                        {/* STOP ICON */}
+
+                        <Square
+                            size={19}
+                            fill="white"
+                            className="
+                                relative
+                                z-10
+                            "
+                        />
+
+                    </>
+
                 )}
+
+
+                {/* ==================================================
+                    VOICE PROCESSING
+                ================================================== */}
+
+                {processingVoice && (
+
+                    <>
+
+                        {/* Rotating circular border */}
+
+                        <span
+                            className="
+                                absolute
+                                inset-0
+
+                                rounded-full
+
+                                border-[3px]
+                                border-white/30
+
+                                border-t-white
+
+                                animate-spin
+                            "
+                        />
+
+                        {/* Center microphone */}
+
+                        <Mic
+                            size={20}
+                            className="
+                                relative
+                                z-10
+                            "
+                        />
+
+                    </>
+
+                )}
+
+
+                {/* ==================================================
+                    NORMAL MICROPHONE
+                ================================================== */}
+
+                {!recording &&
+                    !processingVoice && (
+
+                        <Mic
+                            size={21}
+                        />
+
+                    )}
 
             </button>
 
-            {/* SEND */}
+
+            {/* ==================================================
+                SEND BUTTON
+            ================================================== */}
 
             <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={!message.trim()}
+                disabled={
+                    !message.trim() ||
+                    recording ||
+                    processingVoice
+                }
                 className="
                     bg-green-700
+
                     hover:bg-green-800
+
                     text-white
+
                     p-3
+
                     rounded-xl
+
                     disabled:opacity-50
                     disabled:cursor-not-allowed
+
+                    transition
                 "
             >
 
