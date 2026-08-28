@@ -1,4 +1,4 @@
-# 🌾 Kisan AI — KrishiSetu AI
+# 🌾 KrishiSetu AI
 
 ### 🤖 AI-Powered Multilingual Agriculture Assistant
 
