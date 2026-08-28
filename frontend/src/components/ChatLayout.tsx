@@ -525,525 +525,312 @@ function ChatLayout() {
                         ANIMATED KRISHISETU AI LOGO
                     ================================================== */}
 
-                    <motion.div
-                        initial={{
-                            opacity: 0,
-                            scale: 0.6,
-                            rotate: -20,
-                        }}
-                        animate={{
-                            opacity: 1,
-                            scale: 1,
-                            rotate: 0,
-                        }}
-                        transition={{
-                            duration: 0.8,
-                            ease: "easeOut",
-                        }}
-                        className="
-                            relative
-                            mx-auto
-                            w-28
-                            h-28
-                            md:w-32
-                            md:h-32
-                            mb-6
-                        "
-                    >
+                   {/* ==========================================
+    UNIQUE KRISHISETU AI LOGO ANIMATION
+========================================== */}
 
-                        {/* OUTER GLOW */}
+<motion.div
+    initial={{
+        opacity: 0,
+        scale: 0.5,
+        rotate: -25,
+    }}
+    animate={{
+        opacity: 1,
+        scale: 1,
+        rotate: 0,
+    }}
+    transition={{
+        duration: 0.9,
+        ease: "easeOut",
+    }}
+    className="
+        relative
+        mx-auto
+        w-32
+        h-32
+        md:w-36
+        md:h-36
+        mb-7
+        flex
+        items-center
+        justify-center
+    "
+>
 
-                        <motion.div
-                            animate={{
-                                scale: [
-                                    1,
-                                    1.2,
-                                    1,
-                                ],
-                                opacity: [
-                                    0.25,
-                                    0.5,
-                                    0.25,
-                                ],
-                            }}
-                            transition={{
-                                duration: 2.5,
-                                repeat: Infinity,
-                                ease: "easeInOut",
-                            }}
-                            className="
-                                absolute
-                                inset-0
-                                rounded-full
-                                bg-emerald-400
-                                blur-2xl
-                            "
-                        />
+    {/* ORBITING AI RING */}
 
-                        {/* ROTATING OUTER RING */}
+    <motion.div
+        animate={{
+            rotate: 360,
+        }}
+        transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "linear",
+        }}
+        className="
+            absolute
+            inset-[-12px]
+            rounded-full
+            border
+            border-dashed
+            border-emerald-400/40
+        "
+    />
 
-                        <motion.div
-                            animate={{
-                                rotate: 360,
-                            }}
-                            transition={{
-                                duration: 8,
-                                repeat: Infinity,
-                                ease: "linear",
-                            }}
-                            className="
-                                absolute
-                                inset-[-8px]
-                                rounded-full
-                                border-2
-                                border-dashed
-                                border-green-500/50
-                            "
-                        />
+    {/* PULSING SIGNAL */}
 
-                        {/* SECOND ROTATING RING */}
-
-                        <motion.div
-                            animate={{
-                                rotate: -360,
-                            }}
-                            transition={{
-                                duration: 12,
-                                repeat: Infinity,
-                                ease: "linear",
-                            }}
-                            className="
-                                absolute
-                                inset-[-15px]
-                                rounded-full
-                                border
-                                border-emerald-300/30
-                            "
-                        />
-
-                        {/* MAIN LOGO */}
-
-                        <motion.div
-                            animate={{
-                                y: [
-                                    0,
-                                    -7,
-                                    0,
-                                ],
-                                scale: [
-                                    1,
-                                    1.05,
-                                    1,
-                                ],
-                            }}
-                            transition={{
-                                duration: 3,
-                                repeat: Infinity,
-                                ease: "easeInOut",
-                            }}
-                            className="
-                                relative
-                                w-full
-                                h-full
-                                rounded-[2rem]
-                                bg-gradient-to-br
-                                from-green-800
-                                via-emerald-600
-                                to-green-400
-                                shadow-2xl
-                                flex
-                                items-center
-                                justify-center
-                                overflow-hidden
-                                border-4
-                                border-white/30
-                            "
-                        >
-
-                            {/* INNER LIGHT */}
-
-                            <motion.div
-                                animate={{
-                                    x: [
-                                        "-120%",
-                                        "120%",
-                                    ],
-                                }}
-                                transition={{
-                                    duration: 3,
-                                    repeat: Infinity,
-                                    repeatDelay: 1,
-                                    ease: "easeInOut",
-                                }}
-                                className="
-                                    absolute
-                                    top-0
-                                    left-0
-                                    w-1/3
-                                    h-full
-                                    bg-white/20
-                                    skew-x-12
-                                    blur-md
-                                "
-                            />
-
-                            {/* LEAF */}
-
-                            <motion.div
-                                animate={{
-                                    rotate: [
-                                        0,
-                                        -8,
-                                        8,
-                                        0,
-                                    ],
-                                    scale: [
-                                        1,
-                                        1.12,
-                                        1,
-                                    ],
-                                }}
-                                transition={{
-                                    duration: 2.5,
-                                    repeat: Infinity,
-                                    ease: "easeInOut",
-                                }}
-                            >
-
-                                <Leaf
-                                    size={54}
-                                    strokeWidth={1.8}
-                                    className="
-                                        text-white
-                                        drop-shadow-lg
-                                    "
-                                />
-
-                            </motion.div>
-
-                            {/* AI DOT 1 */}
-
-                            <motion.span
-                                animate={{
-                                    scale: [
-                                        1,
-                                        1.8,
-                                        1,
-                                    ],
-                                    opacity: [
-                                        0.5,
-                                        1,
-                                        0.5,
-                                    ],
-                                }}
-                                transition={{
-                                    duration: 1.5,
-                                    repeat: Infinity,
-                                }}
-                                className="
-                                    absolute
-                                    top-5
-                                    left-6
-                                    w-2
-                                    h-2
-                                    rounded-full
-                                    bg-yellow-300
-                                "
-                            />
-
-                            {/* AI DOT 2 */}
-
-                            <motion.span
-                                animate={{
-                                    scale: [
-                                        1,
-                                        1.8,
-                                        1,
-                                    ],
-                                    opacity: [
-                                        0.5,
-                                        1,
-                                        0.5,
-                                    ],
-                                }}
-                                transition={{
-                                    duration: 1.5,
-                                    repeat: Infinity,
-                                    delay: 0.5,
-                                }}
-                                className="
-                                    absolute
-                                    bottom-6
-                                    right-6
-                                    w-2
-                                    h-2
-                                    rounded-full
-                                    bg-cyan-300
-                                "
-                            />
-
-                        </motion.div>
-
-                        {/* SPARKLE 1 */}
-
-                        <motion.div
-                            animate={{
-                                scale: [
-                                    1,
-                                    1.4,
-                                    1,
-                                ],
-                                rotate: [
-                                    0,
-                                    20,
-                                    0,
-                                ],
-                            }}
-                            transition={{
-                                duration: 2,
-                                repeat: Infinity,
-                            }}
-                            className="
-                                absolute
-                                -top-5
-                                -right-5
-                            "
-                        >
-
-                            <Sparkles
-                                size={26}
-                                className="text-yellow-400"
-                                fill="currentColor"
-                            />
-
-                        </motion.div>
-
-                        {/* SPARKLE 2 */}
-
-                        <motion.div
-                            animate={{
-                                y: [
-                                    0,
-                                    -6,
-                                    0,
-                                ],
-                                opacity: [
-                                    0.4,
-                                    1,
-                                    0.4,
-                                ],
-                            }}
-                            transition={{
-                                duration: 2,
-                                repeat: Infinity,
-                                delay: 0.7,
-                            }}
-                            className="
-                                absolute
-                                bottom-0
-                                -left-6
-                            "
-                        >
-
-                            <Sparkles
-                                size={18}
-                                className="text-emerald-500"
-                                fill="currentColor"
-                            />
-
-                        </motion.div>
-
-                        {/* FLOATING PARTICLE */}
-
-                        <motion.div
-                            animate={{
-                                y: [
-                                    0,
-                                    -15,
-                                    0,
-                                ],
-                                x: [
-                                    0,
-                                    5,
-                                    0,
-                                ],
-                                opacity: [
-                                    0,
-                                    1,
-                                    0,
-                                ],
-                            }}
-                            transition={{
-                                duration: 3,
-                                repeat: Infinity,
-                                delay: 1,
-                            }}
-                            className="
-                                absolute
-                                -top-8
-                                left-1/2
-                                w-2
-                                h-2
-                                rounded-full
-                                bg-green-500
-                            "
-                        />
-
-                    </motion.div>
+    <motion.div
+        animate={{
+            scale: [0.8, 1.3, 1.6],
+            opacity: [0.6, 0.25, 0],
+        }}
+        transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeOut",
+        }}
+        className="
+            absolute
+            w-24
+            h-24
+            rounded-full
+            border-2
+            border-green-400
+        "
+    />
 
 
-                    {/* ==================================================
-                        PROFESSIONAL AI STATUS
-                    ================================================== */}
+    {/* SECOND PULSE */}
 
-                    <motion.div
-                        initial={{
-                            opacity: 0,
-                            y: 8,
-                        }}
-                        animate={{
-                            opacity: 1,
-                            y: 0,
-                        }}
-                        transition={{
-                            duration: 0.6,
-                            delay: 0.25,
-                        }}
-                        className="
-                            flex
-                            items-center
-                            justify-center
-                            gap-3
-                            mb-5
-                        "
-                    >
+    <motion.div
+        animate={{
+            scale: [0.8, 1.3, 1.6],
+            opacity: [0.5, 0.2, 0],
+        }}
+        transition={{
+            duration: 2,
+            repeat: Infinity,
+            delay: 1,
+            ease: "easeOut",
+        }}
+        className="
+            absolute
+            w-24
+            h-24
+            rounded-full
+            border
+            border-emerald-300
+        "
+    />
 
-                        {/* STATUS SIGNAL */}
 
-                        <div
-                            className="
-                                relative
-                                flex
-                                items-center
-                                justify-center
-                            "
-                        >
+    {/* MAIN LOGO */}
 
-                            <motion.span
-                                animate={{
-                                    scale: [
-                                        1,
-                                        1.8,
-                                        1,
-                                    ],
-                                    opacity: [
-                                        0.7,
-                                        0,
-                                        0.7,
-                                    ],
-                                }}
-                                transition={{
-                                    duration: 2,
-                                    repeat: Infinity,
-                                    ease: "easeOut",
-                                }}
-                                className="
-                                    absolute
-                                    w-3
-                                    h-3
-                                    rounded-full
-                                    bg-emerald-400
-                                "
-                            />
+    <motion.div
+        animate={{
+            y: [0, -5, 0],
+        }}
+        transition={{
+            duration: 3,
+            repeat: Infinity,
+            ease: "easeInOut",
+        }}
+        className="
+            relative
+            z-10
+            w-28
+            h-28
+            md:w-32
+            md:h-32
+            rounded-[2rem]
+            bg-gradient-to-br
+            from-[#064e3b]
+            via-[#059669]
+            to-[#34d399]
+            shadow-[0_20px_50px_rgba(16,185,129,0.45)]
+            flex
+            items-center
+            justify-center
+            overflow-hidden
+            border
+            border-white/20
+        "
+    >
 
-                            <span
-                                className="
-                                    relative
-                                    w-2.5
-                                    h-2.5
-                                    rounded-full
-                                    bg-emerald-500
-                                "
-                            />
+        {/* GRID / AI PATTERN */}
 
-                        </div>
+        <div
+            className="
+                absolute
+                inset-0
+                opacity-20
+                bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)]
+                bg-[size:12px_12px]
+            "
+        />
 
-                        {/* LEFT LINE */}
 
-                        <div
-                            className="
-                                hidden
-                                sm:block
-                                w-10
-                                md:w-16
-                                h-px
-                                bg-gradient-to-r
-                                from-transparent
-                                to-green-200
-                            "
-                        />
+        {/* ROTATING ENERGY RING */}
 
-                        {/* BRAND */}
+        <motion.div
+            animate={{
+                rotate: 360,
+            }}
+            transition={{
+                duration: 5,
+                repeat: Infinity,
+                ease: "linear",
+            }}
+            className="
+                absolute
+                w-20
+                h-20
+                rounded-full
+                border
+                border-white/30
+                border-t-white
+                border-r-transparent
+            "
+        />
 
-                        <div
-                            className="
-                                flex
-                                items-center
-                                gap-2
-                            "
-                        >
 
-                            <Sparkles
-                                size={15}
-                                className="text-green-600"
-                            />
+        {/* CENTRAL SEED */}
 
-                            <span
-                                className="
-                                    text-xs
-                                    md:text-sm
-                                    font-semibold
-                                    tracking-wide
-                                    text-green-700
-                                "
-                            >
-                                KrishiSetu AI
-                            </span>
+        <motion.div
+            animate={{
+                scale: [1, 1.15, 1],
+            }}
+            transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+            }}
+            className="
+                relative
+                z-10
+                w-14
+                h-14
+                rounded-full
+                bg-white
+                shadow-xl
+                flex
+                items-center
+                justify-center
+            "
+        >
 
-                            <span
-                                className="text-gray-300"
-                            >
-                                /
-                            </span>
+            <motion.div
+                animate={{
+                    y: [6, -3, 0],
+                    rotate: [0, -5, 5, 0],
+                }}
+                transition={{
+                    duration: 2.5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                }}
+            >
 
-                            <span
-                                className="
-                                    text-xs
-                                    md:text-sm
-                                    text-gray-500
-                                "
-                            >
-                                Intelligent Farming
-                            </span>
+                <Sprout
+                    size={34}
+                    strokeWidth={2.4}
+                    className="
+                        text-green-700
+                    "
+                />
 
-                        </div>
+            </motion.div>
 
-                        {/* RIGHT LINE */}
+        </motion.div>
 
-                        <div
-                            className="
-                                hidden
-                                sm:block
-                                w-10
-                                md:w-16
-                                h-px
-                                bg-gradient-to-l
-                                from-transparent
-                                to-green-200
-                            "
-                        />
 
-                    </motion.div>
+        {/* AI PARTICLES */}
+
+        <motion.span
+            animate={{
+                y: [-8, 8, -8],
+                opacity: [0.3, 1, 0.3],
+            }}
+            transition={{
+                duration: 2,
+                repeat: Infinity,
+            }}
+            className="
+                absolute
+                top-4
+                left-5
+                w-2.5
+                h-2.5
+                rounded-full
+                bg-yellow-300
+                shadow-lg
+            "
+        />
+
+        <motion.span
+            animate={{
+                y: [8, -8, 8],
+                opacity: [0.3, 1, 0.3],
+            }}
+            transition={{
+                duration: 2.2,
+                repeat: Infinity,
+            }}
+            className="
+                absolute
+                bottom-5
+                right-5
+                w-2.5
+                h-2.5
+                rounded-full
+                bg-cyan-200
+                shadow-lg
+            "
+        />
+
+    </motion.div>
+
+
+    {/* ORBITING SPARKLE */}
+
+    <motion.div
+        animate={{
+            rotate: 360,
+        }}
+        transition={{
+            duration: 6,
+            repeat: Infinity,
+            ease: "linear",
+        }}
+        className="
+            absolute
+            inset-[-12px]
+            pointer-events-none
+        "
+    >
+
+        <div
+            className="
+                absolute
+                top-0
+                left-1/2
+                -translate-x-1/2
+                w-3
+                h-3
+                rounded-full
+                bg-yellow-300
+                shadow-[0_0_15px_rgba(253,224,71,0.9)]
+            "
+        />
+
+    </motion.div>
+
+</motion.div>
+
+
+                 
 
 
                     {/* ==================================================
@@ -1060,21 +847,20 @@ function ChatLayout() {
                         "
                     >
 
-                        Smart Farming with{" "}
+                        Smart Farming Powered by{" "}
 
-                        <span
-                            className="
-                                bg-gradient-to-r
-                                from-green-600
-                                to-emerald-500
-                                bg-clip-text
-                                text-transparent
-                            "
-                        >
-                            KrishiSetu AI
-                        </span>
-
-                        {" "}🌾
+<span
+    className="
+        bg-gradient-to-r
+        from-green-600
+        to-emerald-500
+        bg-clip-text
+        text-transparent
+        font-bold
+    "
+>
+    KrishiSetu AI
+</span>
 
                     </h1>
 
