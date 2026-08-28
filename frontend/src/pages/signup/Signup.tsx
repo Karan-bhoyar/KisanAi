@@ -483,7 +483,7 @@ function Signup() {
                         mb-6
                     "
                 >
-                    Join Kisan AI 🌱
+                    Join KrishiSetu AI 🌱
                 </p>
 
 
