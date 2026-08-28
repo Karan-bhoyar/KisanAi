@@ -10,12 +10,18 @@ import type { ReactNode } from "react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ChatLayout from "./components/ChatLayout";
+
 import Login from "./pages/Login/Login";
+import Signup from "./pages/signup/Signup";
+
 import DiseaseDetectionPage from "./pages/DiseaseDetection/DiseaseDetectionPage";
 import DiseaseHistory from "./pages/DiseaseDetection/DiseaseHistory";
+
 import FarmerProfile from "./pages/Profile/FarmerProfile";
 import EditProfile from "./pages/Profile/EditProfile";
+
 import ScrollToTop from "./components/ScrollToTop";
+
 import WeatherAgent from "./pages/Weather/WeatherAgent";
 import MarketPrice from "./pages/MarketPrice/MarketPrice";
 
@@ -38,12 +44,14 @@ function ProtectedRoute({ children }: RouteProps) {
     const token = localStorage.getItem("token");
 
     if (!token) {
+
         return (
             <Navigate
                 to="/login"
                 replace
             />
         );
+
     }
 
     return <>{children}</>;
@@ -57,6 +65,7 @@ function ProtectedRoute({ children }: RouteProps) {
 function MainLayout({ children }: RouteProps) {
 
     return (
+
         <div
             className="
                 min-h-screen
@@ -67,17 +76,25 @@ function MainLayout({ children }: RouteProps) {
         >
 
             {/* Navbar */}
+
             <Navbar />
 
+
             {/* Page Content */}
+
             <main className="flex-1">
+
                 {children}
+
             </main>
 
+
             {/* Footer */}
+
             <Footer />
 
         </div>
+
     );
 }
 
@@ -93,9 +110,12 @@ function App() {
         <BrowserRouter>
 
             {/* Scroll reset when route changes */}
+
             <ScrollToTop />
 
+
             <Routes>
+
 
                 {/* ================================= */}
                 {/* LOGIN */}
@@ -103,22 +123,42 @@ function App() {
 
                 <Route
                     path="/login"
-                    element={<Login />}
+                    element={
+                        <Login />
+                    }
                 />
 
 
                 {/* ================================= */}
-                {/* AI CHAT */}
+                {/* SIGNUP */}
+                {/* ================================= */}
+
+                <Route
+                    path="/signup"
+                    element={
+                        <Signup />
+                    }
+                />
+
+
+                {/* ================================= */}
+                {/* AI CHAT / HOME */}
                 {/* ================================= */}
 
                 <Route
                     path="/"
                     element={
+
                         <ProtectedRoute>
+
                             <MainLayout>
+
                                 <ChatLayout />
+
                             </MainLayout>
+
                         </ProtectedRoute>
+
                     }
                 />
 
@@ -130,11 +170,17 @@ function App() {
                 <Route
                     path="/disease"
                     element={
+
                         <ProtectedRoute>
+
                             <MainLayout>
+
                                 <DiseaseDetectionPage />
+
                             </MainLayout>
+
                         </ProtectedRoute>
+
                     }
                 />
 
@@ -146,11 +192,17 @@ function App() {
                 <Route
                     path="/disease/history"
                     element={
+
                         <ProtectedRoute>
+
                             <MainLayout>
+
                                 <DiseaseHistory />
+
                             </MainLayout>
+
                         </ProtectedRoute>
+
                     }
                 />
 
@@ -162,11 +214,17 @@ function App() {
                 <Route
                     path="/weather"
                     element={
+
                         <ProtectedRoute>
+
                             <MainLayout>
+
                                 <WeatherAgent />
+
                             </MainLayout>
+
                         </ProtectedRoute>
+
                     }
                 />
 
@@ -178,11 +236,17 @@ function App() {
                 <Route
                     path="/market-price"
                     element={
+
                         <ProtectedRoute>
+
                             <MainLayout>
+
                                 <MarketPrice />
+
                             </MainLayout>
+
                         </ProtectedRoute>
+
                     }
                 />
 
@@ -194,11 +258,17 @@ function App() {
                 <Route
                     path="/profile"
                     element={
+
                         <ProtectedRoute>
+
                             <MainLayout>
+
                                 <FarmerProfile />
+
                             </MainLayout>
+
                         </ProtectedRoute>
+
                     }
                 />
 
@@ -210,11 +280,17 @@ function App() {
                 <Route
                     path="/profile/edit"
                     element={
+
                         <ProtectedRoute>
+
                             <MainLayout>
+
                                 <EditProfile />
+
                             </MainLayout>
+
                         </ProtectedRoute>
+
                     }
                 />
 
@@ -226,16 +302,19 @@ function App() {
                 <Route
                     path="*"
                     element={
+
                         <Navigate
                             to="/"
                             replace
                         />
+
                     }
                 />
 
             </Routes>
 
         </BrowserRouter>
+
     );
 }
 

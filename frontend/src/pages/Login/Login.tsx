@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
     Mail,
     Lock,
@@ -79,7 +78,7 @@ function Login() {
 
 
             // ==========================================
-            // RAILWAY LOGIN API
+            // LOGIN API
             // ==========================================
 
             const response = await axios.post(
@@ -287,7 +286,7 @@ function Login() {
                         text-white
                     "
                 >
-                    Kisan AI
+                    KishiSetu AI
                 </h1>
 
 
@@ -326,17 +325,13 @@ function Login() {
 
 
                     <input
-
                         type="email"
-
                         placeholder="Enter email"
-
                         value={email}
-
                         onChange={(e) =>
                             setEmail(e.target.value)
                         }
-
+                        autoComplete="email"
                         className="
                             w-full
                             pl-12
@@ -348,7 +343,6 @@ function Login() {
                             focus:ring-green-300
                             transition
                         "
-
                     />
 
                 </div>
@@ -377,21 +371,16 @@ function Login() {
 
 
                     <input
-
                         type={
                             showPassword
                                 ? "text"
                                 : "password"
                         }
-
                         placeholder="Enter password"
-
                         value={password}
-
                         onChange={(e) =>
                             setPassword(e.target.value)
                         }
-
                         onKeyDown={(e) => {
 
                             if (e.key === "Enter") {
@@ -401,7 +390,7 @@ function Login() {
                             }
 
                         }}
-
+                        autoComplete="current-password"
                         className="
                             w-full
                             pl-12
@@ -414,27 +403,22 @@ function Login() {
                             focus:ring-green-300
                             transition
                         "
-
                     />
 
 
                     <button
-
                         type="button"
-
                         onClick={() =>
                             setShowPassword(
                                 !showPassword
                             )
                         }
-
                         className="
                             absolute
                             right-4
                             top-3.5
                             text-gray-500
                         "
-
                     >
 
                         {
@@ -479,11 +463,8 @@ function Login() {
                 ========================================== */}
 
                 <button
-
                     onClick={handleLogin}
-
                     disabled={loading}
-
                     className="
                         w-full
                         bg-white
@@ -501,11 +482,9 @@ function Login() {
                         disabled:opacity-50
                         disabled:cursor-not-allowed
                     "
-
                 >
 
                     <Sprout size={22} />
-
 
                     {
                         loading
@@ -519,6 +498,54 @@ function Login() {
 
 
                 {/* ==========================================
+                    SIGNUP LINK
+                ========================================== */}
+
+                <div
+                    className="
+                        text-center
+                        mt-6
+                    "
+                >
+
+                    <p
+                        className="
+                            text-green-100
+                            text-sm
+                        "
+                    >
+                        Don't have an account?
+                    </p>
+
+
+                    <Link
+                        to="/signup"
+                        className="
+                            inline-flex
+                            items-center
+                            justify-center
+                            mt-2
+                            px-6
+                            py-2
+                            rounded-xl
+                            border
+                            border-white/50
+                            bg-white/10
+                            text-white
+                            font-semibold
+                            hover:bg-white
+                            hover:text-green-700
+                            transition
+                            duration-300
+                        "
+                    >
+                        Create Account
+                    </Link>
+
+                </div>
+
+
+                {/* ==========================================
                     FOOTER
                 ========================================== */}
 
@@ -526,8 +553,8 @@ function Login() {
                     className="
                         text-center
                         text-green-100
-                        text-sm
-                        mt-6
+                        text-xs
+                        mt-5
                     "
                 >
                     Powered by AI 🌾
@@ -544,4 +571,3 @@ function Login() {
 
 
 export default Login;
-

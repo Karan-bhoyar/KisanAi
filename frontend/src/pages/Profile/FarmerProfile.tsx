@@ -21,28 +21,179 @@ import {
 
 import { motion } from "framer-motion";
 
-function FarmerProfile() {
 
-    const savedProfile =
+/* ======================================================
+   PROFILE TYPE
+====================================================== */
+
+interface FarmerProfileData {
+    name: string;
+    email: string;
+    phone: string;
+    village: string;
+    state: string;
+    crop: string;
+    soil: string;
+    land: string;
+    irrigation: string;
+    experience: string;
+    photo: string;
+}
+
+
+/* ======================================================
+   EMPTY PROFILE
+====================================================== */
+
+const emptyProfile: FarmerProfileData = {
+    name: "",
+    email: "",
+    phone: "",
+    village: "",
+    state: "",
+    crop: "",
+    soil: "",
+    land: "",
+    irrigation: "",
+    experience: "",
+    photo: "",
+};
+
+
+/* ======================================================
+   GET LOGGED-IN USER
+====================================================== */
+
+function getLoggedInUser() {
+
+    const userData =
+        localStorage.getItem("user");
+
+    if (!userData) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(userData);
+    } catch {
+        return null;
+    }
+}
+
+
+/* ======================================================
+   GET USER PROFILE
+====================================================== */
+
+function getUserProfile(): FarmerProfileData {
+
+    const user =
+        getLoggedInUser();
+
+    /*
+        We use the user's email as the unique
+        localStorage key.
+
+        Example:
+
+        farmerProfile_karan@gmail.com
+        farmerProfile_kishor@gmail.com
+    */
+
+    if (user?.email) {
+
+        const savedProfile =
+            localStorage.getItem(
+                `farmerProfile_${user.email}`
+            );
+
+        if (savedProfile) {
+
+            try {
+
+                return {
+                    ...emptyProfile,
+                    ...JSON.parse(savedProfile),
+                };
+
+            } catch {
+
+                return {
+                    ...emptyProfile,
+                    email: user.email,
+                };
+
+            }
+
+        }
+
+        return {
+            ...emptyProfile,
+            email: user.email,
+        };
+    }
+
+
+    /*
+        Fallback if user object is not available.
+        We DO NOT use hardcoded farmer data.
+    */
+
+    const oldProfile =
         localStorage.getItem("farmerProfile");
 
-    const farmer = savedProfile
-        ? JSON.parse(savedProfile)
-        : {
-              name: "Karan Bhoyar",
-              email: "karan@gmail.com",
-              phone: "+91 9876543210",
-              village: "Pune",
-              state: "Maharashtra",
-              crop: "Cotton",
-              soil: "Black Soil",
-              land: "5 Acre",
-              irrigation: "Drip Irrigation",
-              experience: "5 Years",
-              photo: "",
-        };
+    if (oldProfile) {
+
+        try {
+
+            return {
+                ...emptyProfile,
+                ...JSON.parse(oldProfile),
+            };
+
+        } catch {
+
+            return emptyProfile;
+
+        }
+
+    }
+
+    return emptyProfile;
+}
+
+
+/* ======================================================
+   MAIN COMPONENT
+====================================================== */
+
+function FarmerProfile() {
+
+    const farmer =
+        getUserProfile();
+
+
+    /*
+        Check whether profile has
+        enough information.
+    */
+
+    const profileCompleted =
+        Boolean(
+            farmer.name &&
+            farmer.phone &&
+            farmer.village &&
+            farmer.state &&
+            farmer.crop &&
+            farmer.soil &&
+            farmer.land &&
+            farmer.irrigation &&
+            farmer.experience
+        );
+
 
     return (
+
         <div
             className="
                 relative
@@ -88,6 +239,7 @@ function FarmerProfile() {
                 "
             />
 
+
             <motion.div
                 animate={{
                     y: [0, -15, 0],
@@ -106,8 +258,11 @@ function FarmerProfile() {
                     text-green-300/30
                 "
             >
+
                 <Leaf size={55} />
+
             </motion.div>
+
 
             <motion.div
                 animate={{
@@ -127,7 +282,9 @@ function FarmerProfile() {
                     text-emerald-300/30
                 "
             >
+
                 <Wheat size={60} />
+
             </motion.div>
 
 
@@ -184,11 +341,13 @@ function FarmerProfile() {
                                 mb-1
                             "
                         >
+
                             <Leaf size={16} />
 
                             KrishiSetu AI
 
                         </div>
+
 
                         <h1
                             className="
@@ -200,6 +359,7 @@ function FarmerProfile() {
                         >
                             Farmer Profile
                         </h1>
+
 
                         <p
                             className="
@@ -213,27 +373,33 @@ function FarmerProfile() {
 
                     </div>
 
+
                     <div
-                        className="
+                        className={`
                             flex
                             items-center
                             gap-2
                             text-xs
                             font-semibold
-                            text-green-700
-                            bg-green-50
-                            border
-                            border-green-100
                             px-3
                             py-2
                             rounded-full
                             w-fit
-                        "
+                            border
+                            ${
+                                profileCompleted
+                                    ? "text-green-700 bg-green-50 border-green-100"
+                                    : "text-amber-700 bg-amber-50 border-amber-100"
+                            }
+                        `}
                     >
 
                         <ShieldCheck size={15} />
 
-                        Profile Verified
+                        {profileCompleted
+                            ? "Profile Completed"
+                            : "Profile Incomplete"
+                        }
 
                     </div>
 
@@ -241,7 +407,7 @@ function FarmerProfile() {
 
 
                 {/* ==========================================
-                    PREMIUM PROFILE HEADER
+                    PROFILE HEADER
                 ========================================== */}
 
                 <motion.div
@@ -286,6 +452,7 @@ function FarmerProfile() {
                         "
                     />
 
+
                     <div
                         className="
                             absolute
@@ -299,7 +466,8 @@ function FarmerProfile() {
                         "
                     />
 
-                    {/* Decorative rings */}
+
+                    {/* Rings */}
 
                     <motion.div
                         animate={{
@@ -321,6 +489,7 @@ function FarmerProfile() {
                             border-white/10
                         "
                     />
+
 
                     <motion.div
                         animate={{
@@ -378,26 +547,6 @@ function FarmerProfile() {
                             "
                         >
 
-                            {/* Glow */}
-
-                            <motion.div
-                                animate={{
-                                    scale: [1, 1.12, 1],
-                                    opacity: [0.2, 0.4, 0.2],
-                                }}
-                                transition={{
-                                    duration: 3,
-                                    repeat: Infinity,
-                                }}
-                                className="
-                                    absolute
-                                    inset-0
-                                    rounded-full
-                                    bg-white
-                                    blur-xl
-                                "
-                            />
-
                             <div
                                 className="
                                     relative
@@ -421,7 +570,10 @@ function FarmerProfile() {
 
                                     <img
                                         src={farmer.photo}
-                                        alt={farmer.name}
+                                        alt={
+                                            farmer.name ||
+                                            "Farmer"
+                                        }
                                         className="
                                             w-full
                                             h-full
@@ -445,7 +597,7 @@ function FarmerProfile() {
                             </div>
 
 
-                            {/* Online dot */}
+                            {/* Online */}
 
                             <span
                                 className="
@@ -496,7 +648,10 @@ function FarmerProfile() {
 
                                 <Sparkles size={13} />
 
-                                Smart Farmer
+                                {profileCompleted
+                                    ? "Smart Farmer"
+                                    : "New Farmer"
+                                }
 
                             </div>
 
@@ -509,8 +664,27 @@ function FarmerProfile() {
                                     tracking-tight
                                 "
                             >
-                                {farmer.name}
+
+                                {farmer.name ||
+                                    "Complete Your Profile"
+                                }
+
                             </h2>
+
+
+                            <p
+                                className="
+                                    mt-2
+                                    text-green-100
+                                    text-sm
+                                "
+                            >
+
+                                {farmer.email ||
+                                    "Add your farming details to get personalized AI guidance."
+                                }
+
+                            </p>
 
 
                             <div
@@ -525,18 +699,37 @@ function FarmerProfile() {
                             >
 
                                 <ProfilePill
-                                    icon={<Sprout size={14} />}
-                                    text={farmer.crop}
+                                    icon={
+                                        <Sprout size={14} />
+                                    }
+                                    text={
+                                        farmer.crop ||
+                                        "Add Crop"
+                                    }
                                 />
 
-                                <ProfilePill
-                                    icon={<MapPin size={14} />}
-                                    text={farmer.village}
-                                />
 
                                 <ProfilePill
-                                    icon={<CalendarDays size={14} />}
-                                    text={farmer.experience}
+                                    icon={
+                                        <MapPin size={14} />
+                                    }
+                                    text={
+                                        farmer.village ||
+                                        "Add Location"
+                                    }
+                                />
+
+
+                                <ProfilePill
+                                    icon={
+                                        <CalendarDays
+                                            size={14}
+                                        />
+                                    }
+                                    text={
+                                        farmer.experience ||
+                                        "Add Experience"
+                                    }
                                 />
 
                             </div>
@@ -572,7 +765,10 @@ function FarmerProfile() {
 
                             <Edit size={17} />
 
-                            Edit Profile
+                            {profileCompleted
+                                ? "Edit Profile"
+                                : "Complete Profile"
+                            }
 
                             <ChevronRight
                                 size={16}
@@ -605,36 +801,59 @@ function FarmerProfile() {
 
                     <AnimatedStat
                         delay={0}
-                        icon={<Sprout size={22} />}
+                        icon={
+                            <Sprout size={22} />
+                        }
                         title="Main Crop"
-                        value={farmer.crop}
+                        value={
+                            farmer.crop ||
+                            "Not Added"
+                        }
                         bg="bg-green-50"
                         color="text-green-600"
                     />
 
+
                     <AnimatedStat
                         delay={0.08}
-                        icon={<Ruler size={22} />}
+                        icon={
+                            <Ruler size={22} />
+                        }
                         title="Land Area"
-                        value={farmer.land}
+                        value={
+                            farmer.land ||
+                            "Not Added"
+                        }
                         bg="bg-blue-50"
                         color="text-blue-600"
                     />
 
+
                     <AnimatedStat
                         delay={0.16}
-                        icon={<Droplets size={22} />}
+                        icon={
+                            <Droplets size={22} />
+                        }
                         title="Irrigation"
-                        value={farmer.irrigation}
+                        value={
+                            farmer.irrigation ||
+                            "Not Added"
+                        }
                         bg="bg-cyan-50"
                         color="text-cyan-600"
                     />
 
+
                     <AnimatedStat
                         delay={0.24}
-                        icon={<Award size={22} />}
+                        icon={
+                            <Award size={22} />
+                        }
                         title="Experience"
-                        value={farmer.experience}
+                        value={
+                            farmer.experience ||
+                            "Not Added"
+                        }
                         bg="bg-amber-50"
                         color="text-amber-600"
                     />
@@ -665,7 +884,9 @@ function FarmerProfile() {
                 >
 
                     <SectionHeading
-                        icon={<User size={19} />}
+                        icon={
+                            <User size={19} />
+                        }
                         title="Personal Details"
                         subtitle="Your basic contact information"
                     />
@@ -683,28 +904,45 @@ function FarmerProfile() {
                         <InfoCard
                             icon={<User />}
                             title="Full Name"
-                            value={farmer.name}
+                            value={
+                                farmer.name ||
+                                "Not added"
+                            }
                             color="green"
                         />
+
 
                         <InfoCard
                             icon={<Mail />}
                             title="Email Address"
-                            value={farmer.email}
+                            value={
+                                farmer.email ||
+                                "Not added"
+                            }
                             color="blue"
                         />
+
 
                         <InfoCard
                             icon={<Phone />}
                             title="Mobile Number"
-                            value={farmer.phone}
+                            value={
+                                farmer.phone ||
+                                "Not added"
+                            }
                             color="purple"
                         />
+
 
                         <InfoCard
                             icon={<MapPin />}
                             title="Location"
-                            value={`${farmer.village}, ${farmer.state}`}
+                            value={
+                                farmer.village &&
+                                farmer.state
+                                    ? `${farmer.village}, ${farmer.state}`
+                                    : "Not added"
+                            }
                             color="orange"
                         />
 
@@ -737,7 +975,9 @@ function FarmerProfile() {
                 >
 
                     <SectionHeading
-                        icon={<Wheat size={19} />}
+                        icon={
+                            <Wheat size={19} />
+                        }
                         title="Farm Information"
                         subtitle="Details that help KrishiSetu AI personalize recommendations"
                     />
@@ -755,28 +995,43 @@ function FarmerProfile() {
                         <InfoCard
                             icon={<Sprout />}
                             title="Primary Crop"
-                            value={farmer.crop}
+                            value={
+                                farmer.crop ||
+                                "Not added"
+                            }
                             color="green"
                         />
+
 
                         <InfoCard
                             icon={<Tractor />}
                             title="Soil Type"
-                            value={farmer.soil}
+                            value={
+                                farmer.soil ||
+                                "Not added"
+                            }
                             color="brown"
                         />
+
 
                         <InfoCard
                             icon={<Ruler />}
                             title="Land Area"
-                            value={farmer.land}
+                            value={
+                                farmer.land ||
+                                "Not added"
+                            }
                             color="blue"
                         />
+
 
                         <InfoCard
                             icon={<Droplets />}
                             title="Irrigation Method"
-                            value={farmer.irrigation}
+                            value={
+                                farmer.irrigation ||
+                                "Not added"
+                            }
                             color="cyan"
                         />
 
@@ -786,7 +1041,122 @@ function FarmerProfile() {
 
 
                 {/* ==========================================
-                    PERSONALIZED AI CARD
+                    COMPLETE PROFILE MESSAGE
+                ========================================== */}
+
+                {!profileCompleted && (
+
+                    <motion.div
+                        initial={{
+                            opacity: 0,
+                            y: 20,
+                        }}
+                        animate={{
+                            opacity: 1,
+                            y: 0,
+                        }}
+                        className="
+                            mt-10
+                            rounded-3xl
+                            bg-gradient-to-r
+                            from-amber-50
+                            to-yellow-50
+                            border
+                            border-amber-200
+                            p-6
+                        "
+                    >
+
+                        <div
+                            className="
+                                flex
+                                flex-col
+                                md:flex-row
+                                md:items-center
+                                gap-4
+                            "
+                        >
+
+                            <div
+                                className="
+                                    w-12
+                                    h-12
+                                    rounded-2xl
+                                    bg-amber-100
+                                    text-amber-600
+                                    flex
+                                    items-center
+                                    justify-center
+                                    flex-shrink-0
+                                "
+                            >
+
+                                <User size={24} />
+
+                            </div>
+
+
+                            <div className="flex-1">
+
+                                <h3
+                                    className="
+                                        font-black
+                                        text-gray-800
+                                    "
+                                >
+                                    Complete your farmer profile
+                                </h3>
+
+                                <p
+                                    className="
+                                        text-sm
+                                        text-gray-500
+                                        mt-1
+                                    "
+                                >
+                                    Add your crop, soil, land and
+                                    irrigation details to receive
+                                    personalized farming recommendations.
+                                </p>
+
+                            </div>
+
+
+                            <Link
+                                to="/profile/edit"
+                                className="
+                                    inline-flex
+                                    items-center
+                                    justify-center
+                                    gap-2
+                                    bg-green-700
+                                    hover:bg-green-800
+                                    text-white
+                                    px-5
+                                    py-3
+                                    rounded-xl
+                                    text-sm
+                                    font-bold
+                                    transition
+                                    shadow-lg
+                                "
+                            >
+
+                                Complete Now
+
+                                <ChevronRight size={16} />
+
+                            </Link>
+
+                        </div>
+
+                    </motion.div>
+
+                )}
+
+
+                {/* ==========================================
+                    AI CARD
                 ========================================== */}
 
                 <motion.div
@@ -833,6 +1203,7 @@ function FarmerProfile() {
                             blur-2xl
                         "
                     />
+
 
                     <div
                         className="
@@ -893,6 +1264,7 @@ function FarmerProfile() {
                                     Personalized Farming
                                 </h3>
 
+
                                 <span
                                     className="
                                         text-[10px]
@@ -911,6 +1283,7 @@ function FarmerProfile() {
 
                             </div>
 
+
                             <p
                                 className="
                                     text-sm
@@ -918,9 +1291,9 @@ function FarmerProfile() {
                                     leading-relaxed
                                 "
                             >
-                                KrishiSetu AI can use your crop, soil,
-                                land and irrigation information to provide
-                                more relevant farming guidance.
+                                KrishiSetu AI can use your crop,
+                                soil, land and irrigation information
+                                to provide more relevant farming guidance.
                             </p>
 
                         </div>
@@ -1010,6 +1383,7 @@ function ProfilePill({
 }) {
 
     return (
+
         <span
             className="
                 inline-flex
@@ -1027,8 +1401,11 @@ function ProfilePill({
                 backdrop-blur-sm
             "
         >
+
             {icon}
+
             {text}
+
         </span>
     );
 }
@@ -1049,6 +1426,7 @@ function SectionHeading({
 }) {
 
     return (
+
         <div
             className="
                 flex
@@ -1073,6 +1451,7 @@ function SectionHeading({
                 {icon}
             </div>
 
+
             <div>
 
                 <h2
@@ -1085,6 +1464,7 @@ function SectionHeading({
                 >
                     {title}
                 </h2>
+
 
                 <p
                     className="
@@ -1125,6 +1505,7 @@ function AnimatedStat({
 }) {
 
     return (
+
         <motion.div
             initial={{
                 opacity: 0,
@@ -1175,6 +1556,7 @@ function AnimatedStat({
                 {icon}
             </div>
 
+
             <p
                 className="
                     text-xs
@@ -1184,6 +1566,7 @@ function AnimatedStat({
             >
                 {title}
             </p>
+
 
             <h3
                 className="
@@ -1220,10 +1603,7 @@ function InfoCard({
     color: string;
 }) {
 
-    const colors: Record<
-        string,
-        string
-    > = {
+    const colors: Record<string, string> = {
 
         green:
             "bg-green-50 text-green-600",
@@ -1246,6 +1626,7 @@ function InfoCard({
 
 
     return (
+
         <motion.div
             whileHover={{
                 y: -4,
@@ -1298,6 +1679,7 @@ function InfoCard({
                 >
                     {title}
                 </p>
+
 
                 <p
                     className="

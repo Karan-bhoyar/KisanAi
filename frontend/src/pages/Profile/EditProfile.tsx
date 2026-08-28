@@ -23,31 +23,61 @@ import { motion } from "framer-motion";
 function EditProfile() {
     const navigate = useNavigate();
 
-    const savedProfile = localStorage.getItem("farmerProfile");
+    // ======================================================
+    // GET LOGGED-IN USER
+    // ======================================================
+
+    const token = localStorage.getItem("token");
 
     // ======================================================
-    // FARMER STATE
+    // CREATE UNIQUE PROFILE KEY
     // ======================================================
+
+    const getProfileKey = () => {
+        const loggedInEmail = localStorage.getItem("userEmail");
+
+        if (loggedInEmail) {
+            return `farmerProfile_${loggedInEmail}`;
+        }
+
+        return "farmerProfile";
+    };
+
+    const profileKey = getProfileKey();
+
+    // ======================================================
+    // EMPTY PROFILE
+    // ======================================================
+
+    const emptyProfile = {
+        name: "",
+        email: localStorage.getItem("userEmail") || "",
+        phone: "",
+        village: "",
+        state: "",
+        crop: "",
+        soil: "",
+        land: "",
+        irrigation: "",
+        experience: "",
+        photo: "",
+    };
+
+    // ======================================================
+    // LOAD PROFILE
+    // ======================================================
+
+    const savedProfile = localStorage.getItem(profileKey);
 
     const [farmer, setFarmer] = useState(
         savedProfile
             ? JSON.parse(savedProfile)
-            : {
-                  name: "",
-                  email: "",
-                  phone: "",
-                  village: "",
-                  state: "",
-                  crop: "",
-                  soil: "",
-                  land: "",
-                  irrigation: "",
-                  experience: "",
-                  photo: "",
-              }
+            : emptyProfile
     );
 
     const [saving, setSaving] = useState(false);
+    const [success, setSuccess] = useState("");
+    const [error, setError] = useState("");
 
     // ======================================================
     // HANDLE INPUT
@@ -60,6 +90,9 @@ function EditProfile() {
             ...farmer,
             [e.target.name]: e.target.value,
         });
+
+        setError("");
+        setSuccess("");
     };
 
     // ======================================================
@@ -73,16 +106,23 @@ function EditProfile() {
 
         if (!file) return;
 
+        if (file.size > 2 * 1024 * 1024) {
+            setError("Profile photo must be less than 2MB.");
+            return;
+        }
+
         const reader = new FileReader();
 
         reader.onload = () => {
-            setFarmer({
-                ...farmer,
+            setFarmer((prev: any) => ({
+                ...prev,
                 photo: reader.result as string,
-            });
+            }));
         };
 
         reader.readAsDataURL(file);
+
+        setError("");
     };
 
     // ======================================================
@@ -90,20 +130,96 @@ function EditProfile() {
     // ======================================================
 
     const handleSubmit = () => {
+        setError("");
+        setSuccess("");
+
+        // ==================================================
+        // REQUIRED FIELDS
+        // ==================================================
+
+        if (!farmer.name.trim()) {
+            setError("Please enter your full name.");
+            return;
+        }
+
+        if (!farmer.email.trim()) {
+            setError("Please enter your email address.");
+            return;
+        }
+
+        if (!farmer.phone.trim()) {
+            setError("Please enter your mobile number.");
+            return;
+        }
+
+        if (!farmer.village.trim()) {
+            setError("Please enter your village or city.");
+            return;
+        }
+
+        if (!farmer.state.trim()) {
+            setError("Please enter your state.");
+            return;
+        }
+
+        if (!farmer.crop.trim()) {
+            setError("Please enter your main crop.");
+            return;
+        }
+
+        // ==================================================
+        // PHONE VALIDATION
+        // ==================================================
+
+        const cleanPhone = farmer.phone.replace(/\D/g, "");
+
+        if (cleanPhone.length < 10) {
+            setError("Please enter a valid mobile number.");
+            return;
+        }
+
+        // ==================================================
+        // SAVE PROFILE
+        // ==================================================
+
         setSaving(true);
 
+        const updatedProfile = {
+            ...farmer,
+            name: farmer.name.trim(),
+            email: farmer.email.trim(),
+            phone: farmer.phone.trim(),
+            village: farmer.village.trim(),
+            state: farmer.state.trim(),
+            crop: farmer.crop.trim(),
+            soil: farmer.soil.trim(),
+            land: farmer.land.trim(),
+            irrigation: farmer.irrigation.trim(),
+            experience: farmer.experience.trim(),
+        };
+
+        localStorage.setItem(
+            profileKey,
+            JSON.stringify(updatedProfile)
+        );
+
+        // Keep latest profile for compatibility
         localStorage.setItem(
             "farmerProfile",
-            JSON.stringify(farmer)
+            JSON.stringify(updatedProfile)
         );
 
         setTimeout(() => {
             setSaving(false);
 
-            alert("Profile Updated Successfully ✅");
+            setSuccess(
+                "Profile updated successfully!"
+            );
 
-            navigate("/profile");
-        }, 700);
+            setTimeout(() => {
+                navigate("/profile");
+            }, 700);
+        }, 500);
     };
 
     // ======================================================
@@ -128,9 +244,9 @@ function EditProfile() {
         >
 
             {/* ==================================================
-                BACKGROUND DECORATION
+                BACKGROUND
             ================================================== */}
-
+            
             <motion.div
                 animate={{
                     x: [0, 40, 0],
@@ -177,8 +293,6 @@ function EditProfile() {
                 "
             />
 
-            {/* FLOATING LEAF */}
-
             <motion.div
                 animate={{
                     y: [0, -12, 0],
@@ -201,7 +315,7 @@ function EditProfile() {
             </motion.div>
 
             {/* ==================================================
-                MAIN CONTAINER
+                MAIN
             ================================================== */}
 
             <div
@@ -278,8 +392,6 @@ function EditProfile() {
                     "
                 >
 
-                    {/* HEADER DECORATION */}
-
                     <div
                         className="
                             absolute
@@ -316,7 +428,7 @@ function EditProfile() {
                     >
 
                         {/* ==================================================
-                            PROFILE PHOTO
+                            PHOTO
                         ================================================== */}
 
                         <motion.div
@@ -363,8 +475,6 @@ function EditProfile() {
                                     👨‍🌾
                                 </div>
                             )}
-
-                            {/* CAMERA BUTTON */}
 
                             <label
                                 className="
@@ -424,7 +534,6 @@ function EditProfile() {
                                 "
                             >
                                 <Leaf size={14} />
-
                                 KrishiSetu AI
                             </div>
 
@@ -447,8 +556,8 @@ function EditProfile() {
                                     md:text-base
                                 "
                             >
-                                Keep your farming information updated
-                                for a better KrishiSetu AI experience.
+                                Add your farming details to get
+                                personalized AI recommendations.
                             </p>
 
                         </div>
@@ -487,7 +596,9 @@ function EditProfile() {
                     "
                 >
 
-                    {/* FORM TITLE */}
+                    {/* ==================================================
+                        TITLE
+                    ================================================== */}
 
                     <div className="mb-7">
 
@@ -535,7 +646,7 @@ function EditProfile() {
                                         mt-1
                                     "
                                 >
-                                    Enter your information below
+                                    Fill in your information below
                                 </p>
 
                             </div>
@@ -651,7 +762,57 @@ function EditProfile() {
                     </div>
 
                     {/* ==================================================
-                        PHOTO INFORMATION
+                        ERROR
+                    ================================================== */}
+
+                    {error && (
+                        <div
+                            className="
+                                mt-6
+                                rounded-xl
+                                border
+                                border-red-200
+                                bg-red-50
+                                px-4
+                                py-3
+                                text-sm
+                                font-medium
+                                text-red-700
+                            "
+                        >
+                            {error}
+                        </div>
+                    )}
+
+                    {/* ==================================================
+                        SUCCESS
+                    ================================================== */}
+
+                    {success && (
+                        <div
+                            className="
+                                mt-6
+                                flex
+                                items-center
+                                gap-2
+                                rounded-xl
+                                border
+                                border-green-200
+                                bg-green-50
+                                px-4
+                                py-3
+                                text-sm
+                                font-semibold
+                                text-green-700
+                            "
+                        >
+                            <CheckCircle2 size={19} />
+                            {success}
+                        </div>
+                    )}
+
+                    {/* ==================================================
+                        INFORMATION
                     ================================================== */}
 
                     <div
@@ -686,7 +847,7 @@ function EditProfile() {
                                     text-green-800
                                 "
                             >
-                                Profile information
+                                Your farming profile
                             </p>
 
                             <p
@@ -697,9 +858,9 @@ function EditProfile() {
                                     leading-relaxed
                                 "
                             >
-                                Your information is stored locally
-                                in your browser and can be updated
-                                anytime.
+                                Add your crop, soil, land and irrigation
+                                details so KrishiSetu AI can provide
+                                more personalized farming guidance.
                             </p>
 
                         </div>
@@ -707,7 +868,7 @@ function EditProfile() {
                     </div>
 
                     {/* ==================================================
-                        ACTION BUTTONS
+                        BUTTONS
                     ================================================== */}
 
                     <div
@@ -755,6 +916,7 @@ function EditProfile() {
                             whileTap={{
                                 scale: 0.97,
                             }}
+                            type="button"
                             onClick={handleSubmit}
                             disabled={saving}
                             className="
@@ -773,6 +935,7 @@ function EditProfile() {
                                 shadow-lg
                                 hover:shadow-xl
                                 disabled:opacity-70
+                                disabled:cursor-not-allowed
                                 transition
                             "
                         >
@@ -909,7 +1072,7 @@ function FormInput({
                 <input
                     type={type}
                     name={name}
-                    value={value}
+                    value={value || ""}
                     onChange={onChange}
                     placeholder={placeholder}
                     className="
