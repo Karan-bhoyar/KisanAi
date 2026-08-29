@@ -5,6 +5,8 @@ import {
     useState,
 } from "react";
 
+import { useNavigate } from "react-router-dom";
+
 import {
     Leaf,
     Sprout,
@@ -15,12 +17,9 @@ import {
     MessageCircle,
     ArrowRight,
     X,
-    Tractor,
     Wheat,
-    Droplets,
     Bot,
     Zap,
-    Shield,
     UserRound,
     Brain,
 } from "lucide-react";
@@ -51,17 +50,32 @@ interface Message {
 
 type Language = "hi" | "mr" | "en";
 
+type FeatureAction = "chat" | "navigate";
+
+interface Feature {
+    title: string;
+    description: string;
+    action: FeatureAction;
+    path?: string;
+    icon: React.ElementType;
+    iconBg: string;
+    iconColor: string;
+    border: string;
+    gradient: string;
+}
+
 // ======================================================
 // FEATURES
 // ======================================================
 
-const FEATURES = [
+const FEATURES: Feature[] = [
     {
         title: "Crop Recommendation",
         description:
             "Find suitable crops based on season, soil and farming conditions.",
-        question:
-            "Which crop should I grow based on my soil and season?",
+
+        action: "chat",
+
         icon: Sprout,
         iconBg: "bg-emerald-100",
         iconColor: "text-emerald-600",
@@ -69,12 +83,15 @@ const FEATURES = [
         gradient:
             "from-emerald-50 via-white to-green-50",
     },
+
     {
         title: "Disease Detection",
         description:
             "Identify crop diseases and get practical prevention guidance.",
-        question:
-            "How can I identify and prevent crop diseases?",
+
+        action: "navigate",
+        path: "/disease",
+
         icon: Bug,
         iconBg: "bg-red-100",
         iconColor: "text-red-500",
@@ -82,12 +99,15 @@ const FEATURES = [
         gradient:
             "from-red-50 via-white to-orange-50",
     },
+
     {
         title: "Weather Guidance",
         description:
             "Plan irrigation, spraying and farm activities with weather insights.",
-        question:
-            "How should I plan my farming activities according to weather?",
+
+        action: "navigate",
+        path: "/weather",
+
         icon: CloudSun,
         iconBg: "bg-blue-100",
         iconColor: "text-blue-500",
@@ -95,18 +115,21 @@ const FEATURES = [
         gradient:
             "from-blue-50 via-white to-cyan-50",
     },
+
     {
-        title: "Government Schemes",
+        title: "Market Prices",
         description:
-            "Discover useful government schemes and benefits available for farmers.",
-        question:
-            "Which government schemes are available for farmers?",
-        icon: ShieldCheck,
-        iconBg: "bg-purple-100",
-        iconColor: "text-purple-500",
-        border: "border-purple-200",
+            "Check current crop market prices and make better selling decisions.",
+
+        action: "navigate",
+        path: "/market-price",
+
+        icon: Wheat,
+        iconBg: "bg-yellow-100",
+        iconColor: "text-yellow-600",
+        border: "border-yellow-200",
         gradient:
-            "from-purple-50 via-white to-indigo-50",
+            "from-yellow-50 via-white to-orange-50",
     },
 ];
 
@@ -115,6 +138,7 @@ const FEATURES = [
 // ======================================================
 
 function ChatLayout() {
+    const navigate = useNavigate();
     const reduceMotion = useReducedMotion();
 
     // ==================================================
@@ -130,7 +154,9 @@ function ChatLayout() {
     ]);
 
     const [loading, setLoading] = useState(false);
+
     const [chatOpen, setChatOpen] = useState(false);
+
     const [voiceProcessing, setVoiceProcessing] =
         useState(false);
 
@@ -141,7 +167,8 @@ function ChatLayout() {
     const chatEndRef =
         useRef<HTMLDivElement | null>(null);
 
-    const historyLoadedRef = useRef(false);
+    const historyLoadedRef =
+        useRef(false);
 
     // ==================================================
     // LOAD CHAT HISTORY
@@ -176,7 +203,7 @@ function ChatLayout() {
                         ) {
                             result.push({
                                 role: "user",
-                                text: chat.message,
+                                text: chat.message.trim(),
                             });
                         }
 
@@ -186,7 +213,7 @@ function ChatLayout() {
                         ) {
                             result.push({
                                 role: "ai",
-                                text: chat.response,
+                                text: chat.response.trim(),
                             });
                         }
 
@@ -202,16 +229,50 @@ function ChatLayout() {
             } catch (error: any) {
                 console.error(
                     "CHAT HISTORY ERROR:",
-                    error.response?.status,
-                    error.response?.data ||
-                        error.message ||
+                    error?.response?.status,
+                    error?.response?.data ||
+                        error?.message ||
                         error
                 );
+
+                if (
+                    error?.response?.status === 401
+                ) {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("user");
+                }
             }
         };
 
         loadHistory();
     }, []);
+
+    // ==================================================
+    // ESCAPE KEY
+    // ==================================================
+
+    useEffect(() => {
+        const handleEscape = (event: KeyboardEvent) => {
+            if (
+                event.key === "Escape" &&
+                chatOpen
+            ) {
+                setChatOpen(false);
+            }
+        };
+
+        window.addEventListener(
+            "keydown",
+            handleEscape
+        );
+
+        return () => {
+            window.removeEventListener(
+                "keydown",
+                handleEscape
+            );
+        };
+    }, [chatOpen]);
 
     // ==================================================
     // AUTO SCROLL
@@ -236,6 +297,51 @@ function ChatLayout() {
     ]);
 
     // ==================================================
+    // OPEN CHAT
+    // ==================================================
+
+    const openChat = useCallback(() => {
+        const token =
+            localStorage.getItem("token");
+
+        if (!token) {
+            navigate("/login");
+            return;
+        }
+
+        setChatOpen(true);
+    }, [navigate]);
+
+    // ==================================================
+    // FEATURE CLICK
+    // ==================================================
+
+    const handleFeatureClick = useCallback(
+        (feature: Feature) => {
+            // -------------------------------
+            // CHAT FEATURE
+            // -------------------------------
+
+            if (feature.action === "chat") {
+                openChat();
+                return;
+            }
+
+            // -------------------------------
+            // NAVIGATION FEATURE
+            // -------------------------------
+
+            if (
+                feature.action === "navigate" &&
+                feature.path
+            ) {
+                navigate(feature.path);
+            }
+        },
+        [navigate, openChat]
+    );
+
+    // ==================================================
     // SEND MESSAGE
     // ==================================================
 
@@ -247,22 +353,28 @@ function ChatLayout() {
             const trimmedMessage =
                 message.trim();
 
+            // Empty message
             if (!trimmedMessage) {
                 setVoiceProcessing(false);
                 return;
             }
+
+            // ------------------------------------------
+            // AUTH CHECK
+            // ------------------------------------------
 
             const token =
                 localStorage.getItem("token");
 
             if (!token) {
                 setVoiceProcessing(false);
-
-                window.location.href =
-                    "/login";
-
+                navigate("/login");
                 return;
             }
+
+            // ------------------------------------------
+            // USER MESSAGE
+            // ------------------------------------------
 
             setMessages((prev) => [
                 ...prev,
@@ -275,67 +387,124 @@ function ChatLayout() {
             setLoading(true);
 
             try {
+                // --------------------------------------
+                // API CALL
+                // --------------------------------------
+
                 const data = await sendMessage(
                     trimmedMessage,
                     language
                 );
 
+                // --------------------------------------
+                // VALIDATE RESPONSE
+                // --------------------------------------
+
                 if (
                     !data ||
-                    typeof data.response !== "string"
+                    typeof data.response !==
+                        "string" ||
+                    !data.response.trim()
                 ) {
                     setMessages((prev) => [
                         ...prev,
                         {
                             role: "ai",
                             text:
-                                "❌ AI ne valid response nahi diya.",
+                                "❌ AI ne valid response nahi diya. Please try again.",
                         },
                     ]);
 
                     return;
                 }
 
+                // --------------------------------------
+                // AI RESPONSE
+                // --------------------------------------
+
                 setMessages((prev) => [
                     ...prev,
                     {
                         role: "ai",
-                        text: data.response,
+                        text: data.response.trim(),
                     },
                 ]);
             } catch (error: any) {
                 console.error(
                     "CHAT API ERROR:",
-                    error.response?.status,
-                    error.response?.data ||
-                        error.message ||
+                    error?.response?.status,
+                    error?.response?.data ||
+                        error?.message ||
                         error
                 );
 
                 let errorMessage =
-                    "❌ Server response nahi aaya.";
+                    "❌ Server response nahi aaya. Please try again.";
+
+                // --------------------------------------
+                // 401
+                // --------------------------------------
 
                 if (
-                    error.response?.status === 401
+                    error?.response?.status === 401
                 ) {
                     errorMessage =
                         "❌ Session expired. Please login again.";
-                } else if (
-                    error.response?.status === 404
+
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("user");
+
+                    setMessages((prev) => [
+                        ...prev,
+                        {
+                            role: "ai",
+                            text: errorMessage,
+                        },
+                    ]);
+
+                    setTimeout(() => {
+                        navigate("/login");
+                    }, 800);
+
+                    return;
+                }
+
+                // --------------------------------------
+                // 404
+                // --------------------------------------
+
+                if (
+                    error?.response?.status === 404
                 ) {
                     errorMessage =
-                        "❌ Service not found. Please login again.";
-                } else if (
-                    error.response?.status === 500
+                        "❌ Chat service not found. Please try again.";
+                }
+
+                // --------------------------------------
+                // 500
+                // --------------------------------------
+
+                else if (
+                    error?.response?.status === 500
                 ) {
                     errorMessage =
                         "❌ Backend server error. Please try again.";
-                } else if (
-                    error.message === "Network Error"
+                }
+
+                // --------------------------------------
+                // NETWORK ERROR
+                // --------------------------------------
+
+                else if (
+                    error?.message === "Network Error"
                 ) {
                     errorMessage =
                         "❌ Backend se connection nahi ho raha.";
                 }
+
+                // --------------------------------------
+                // GENERAL ERROR
+                // --------------------------------------
 
                 setMessages((prev) => [
                     ...prev,
@@ -349,7 +518,7 @@ function ChatLayout() {
                 setVoiceProcessing(false);
             }
         },
-        []
+        [navigate]
     );
 
     // ==================================================
@@ -362,22 +531,6 @@ function ChatLayout() {
         }, []);
 
     // ==================================================
-    // QUICK QUESTION
-    // ==================================================
-
-    const handleQuickQuestion = useCallback(
-        (question: string) => {
-            setChatOpen(true);
-
-            void handleSend(
-                question,
-                "en"
-            );
-        },
-        [handleSend]
-    );
-
-    // ==================================================
     // CHAT ANIMATION
     // ==================================================
 
@@ -387,14 +540,19 @@ function ChatLayout() {
               initial: {
                   opacity: 0,
                   y: 12,
+                  scale: 0.98,
               },
+
               animate: {
                   opacity: 1,
                   y: 0,
+                  scale: 1,
               },
+
               exit: {
                   opacity: 0,
                   y: 12,
+                  scale: 0.98,
               },
           };
 
@@ -420,7 +578,9 @@ function ChatLayout() {
                 pb-32
             "
         >
-            {/* BACKGROUND */}
+            {/* ==================================================
+                BACKGROUND GLOW
+            ================================================== */}
 
             <div
                 className="
@@ -455,9 +615,25 @@ function ChatLayout() {
                         blur-3xl
                     "
                 />
+
+                <div
+                    className="
+                        absolute
+                        bottom-0
+                        left-1/2
+                        -translate-x-1/2
+                        w-[500px]
+                        h-[300px]
+                        rounded-full
+                        bg-lime-400/5
+                        blur-3xl
+                    "
+                />
             </div>
 
-            {/* DOT PATTERN */}
+            {/* ==================================================
+                DOT PATTERN
+            ================================================== */}
 
             <div
                 className="
@@ -471,7 +647,7 @@ function ChatLayout() {
             />
 
             {/* ==================================================
-                MAIN
+                MAIN CONTENT
             ================================================== */}
 
             <div
@@ -545,7 +721,12 @@ function ChatLayout() {
                                 reduceMotion
                                     ? {}
                                     : {
-                                          rotate: [0, 3, -3, 0],
+                                          rotate: [
+                                              0,
+                                              3,
+                                              -3,
+                                              0,
+                                          ],
                                       }
                             }
                             transition={{
@@ -627,6 +808,7 @@ function ChatLayout() {
                         "
                     >
                         Smart Farming
+
                         <br />
 
                         <span
@@ -643,7 +825,27 @@ function ChatLayout() {
                         </span>
                     </motion.h1>
 
-                    <p
+                    <motion.p
+                        initial={
+                            reduceMotion
+                                ? false
+                                : {
+                                      opacity: 0,
+                                      y: 15,
+                                  }
+                        }
+                        animate={
+                            reduceMotion
+                                ? {}
+                                : {
+                                      opacity: 1,
+                                      y: 0,
+                                  }
+                        }
+                        transition={{
+                            duration: 0.6,
+                            delay: 0.2,
+                        }}
                         className="
                             max-w-3xl
                             mx-auto
@@ -659,7 +861,7 @@ function ChatLayout() {
                         crops, diseases, weather, mandi
                         prices and government schemes —
                         all in one powerful platform.
-                    </p>
+                    </motion.p>
 
                     {/* BADGES */}
 
@@ -682,7 +884,7 @@ function ChatLayout() {
                                 text: "Smart Insights",
                             },
                             {
-                                icon: Shield,
+                                icon: ShieldCheck,
                                 text: "Farmer First",
                             },
                         ].map((item) => {
@@ -704,6 +906,7 @@ function ChatLayout() {
                                         text-green-50
                                         text-xs
                                         font-semibold
+                                        backdrop-blur-sm
                                     "
                                 >
                                     <Icon size={15} />
@@ -713,8 +916,6 @@ function ChatLayout() {
                         })}
                     </div>
                 </section>
-
-         
 
                 {/* ==================================================
                     FARMER + AI
@@ -731,7 +932,17 @@ function ChatLayout() {
                 >
                     {/* FARMER CARD */}
 
-                    <div
+                    <motion.div
+                        whileHover={
+                            reduceMotion
+                                ? {}
+                                : {
+                                      y: -5,
+                                  }
+                        }
+                        transition={{
+                            duration: 0.2,
+                        }}
                         className="
                             relative
                             overflow-hidden
@@ -831,7 +1042,9 @@ function ChatLayout() {
                                     "
                                 >
                                     Technology for
+
                                     <br />
+
                                     <span className="text-lime-200">
                                         Every Farmer
                                     </span>
@@ -854,11 +1067,21 @@ function ChatLayout() {
                                 </p>
                             </div>
                         </div>
-                    </div>
+                    </motion.div>
 
                     {/* AI CARD */}
 
-                    <div
+                    <motion.div
+                        whileHover={
+                            reduceMotion
+                                ? {}
+                                : {
+                                      y: -5,
+                                  }
+                        }
+                        transition={{
+                            duration: 0.2,
+                        }}
                         className="
                             relative
                             overflow-hidden
@@ -983,9 +1206,7 @@ function ChatLayout() {
                                         >
                                             <Icon
                                                 size={21}
-                                                className={
-                                                    item.color
-                                                }
+                                                className={item.color}
                                             />
                                         </div>
 
@@ -1012,13 +1233,11 @@ function ChatLayout() {
                                 );
                             })}
                         </div>
-                    </div>
+                    </motion.div>
                 </section>
 
-
-
-{/* ==================================================
-                    HOW IT WORKS - 2 ANIMATED CARDS
+                {/* ==================================================
+                    HOW IT WORKS
                 ================================================== */}
 
                 <section className="mb-14">
@@ -1129,8 +1348,6 @@ function ChatLayout() {
                                 md:p-9
                             "
                         >
-                            {/* glow */}
-
                             <div
                                 className="
                                     absolute
@@ -1202,7 +1419,9 @@ function ChatLayout() {
                                     "
                                 >
                                     Tell Us About
+
                                     <br />
+
                                     <span className="text-green-600">
                                         Your Farm
                                     </span>
@@ -1272,7 +1491,7 @@ function ChatLayout() {
                             </div>
                         </motion.div>
 
-                        {/* CENTER CONNECTOR */}
+                        {/* DESKTOP CONNECTOR */}
 
                         <div
                             className="
@@ -1293,7 +1512,11 @@ function ChatLayout() {
                                     reduceMotion
                                         ? {}
                                         : {
-                                              x: [0, 8, 0],
+                                              x: [
+                                                  0,
+                                                  8,
+                                                  0,
+                                              ],
                                           }
                                 }
                                 transition={{
@@ -1336,12 +1559,17 @@ function ChatLayout() {
                                     reduceMotion
                                         ? {}
                                         : {
-                                              y: [0, 6, 0],
+                                              y: [
+                                                  0,
+                                                  6,
+                                                  0,
+                                              ],
                                           }
                                 }
                                 transition={{
                                     duration: 1.5,
                                     repeat: Infinity,
+                                    ease: "easeInOut",
                                 }}
                                 className="
                                     w-12
@@ -1415,8 +1643,6 @@ function ChatLayout() {
                                 text-white
                             "
                         >
-                            {/* glow */}
-
                             <div
                                 className="
                                     absolute
@@ -1487,7 +1713,9 @@ function ChatLayout() {
                                     "
                                 >
                                     Get Smart
+
                                     <br />
+
                                     <span className="text-lime-300">
                                         AI Insights
                                     </span>
@@ -1535,8 +1763,7 @@ function ChatLayout() {
                                             text: "Schemes",
                                         },
                                     ].map((item) => {
-                                        const Icon =
-                                            item.icon;
+                                        const Icon = item.icon;
 
                                         return (
                                             <div
@@ -1559,6 +1786,7 @@ function ChatLayout() {
                                                     size={16}
                                                     className="text-lime-300"
                                                 />
+
                                                 {item.text}
                                             </div>
                                         );
@@ -1583,6 +1811,7 @@ function ChatLayout() {
                         </motion.div>
                     </div>
                 </section>
+
                 {/* ==================================================
                     FEATURES
                 ================================================== */}
@@ -1642,150 +1871,172 @@ function ChatLayout() {
                             gap-5
                         "
                     >
-                        {FEATURES.map((feature, index) => {
-                            const Icon = feature.icon;
+                        {FEATURES.map(
+                            (feature, index) => {
+                                const Icon =
+                                    feature.icon;
 
-                            return (
-                                <motion.button
-                                    key={feature.title}
-                                    type="button"
-                                    onClick={() =>
-                                        handleQuickQuestion(
-                                            feature.question
-                                        )
-                                    }
-                                    initial={
-                                        reduceMotion
-                                            ? false
-                                            : {
-                                                  opacity: 0,
-                                                  y: 25,
-                                              }
-                                    }
-                                    whileInView={
-                                        reduceMotion
-                                            ? {}
-                                            : {
-                                                  opacity: 1,
-                                                  y: 0,
-                                              }
-                                    }
-                                    viewport={{
-                                        once: true,
-                                        amount: 0.15,
-                                    }}
-                                    transition={{
-                                        duration: 0.45,
-                                        delay: index * 0.08,
-                                    }}
-                                    whileHover={
-                                        reduceMotion
-                                            ? {}
-                                            : {
-                                                  y: -6,
-                                              }
-                                    }
-                                    className={`
-                                        group
-                                        relative
-                                        overflow-hidden
-                                        text-left
-                                        rounded-[2rem]
-                                        bg-gradient-to-br
-                                        ${feature.gradient}
-                                        border
-                                        ${feature.border}
-                                        p-6
-                                        shadow-lg
-                                        transition-shadow
-                                        duration-200
-                                        hover:shadow-2xl
-                                        active:scale-[0.98]
-                                    `}
-                                >
-                                    <div className="relative z-10">
-                                        <div
-                                            className={`
-                                                w-14
-                                                h-14
-                                                rounded-2xl
-                                                ${feature.iconBg}
-                                                ${feature.iconColor}
-                                                flex
-                                                items-center
-                                                justify-center
-                                                mb-5
-                                                transition-transform
-                                                duration-300
-                                                group-hover:scale-110
-                                            `}
-                                        >
-                                            <Icon size={28} />
-                                        </div>
-
-                                        <span
-                                            className="
-                                                text-[10px]
-                                                font-black
-                                                uppercase
-                                                tracking-[0.18em]
-                                                text-gray-500
-                                            "
-                                        >
-                                            AI POWERED
-                                        </span>
-
-                                        <h3
-                                            className="
-                                                text-lg
-                                                font-black
-                                                text-gray-800
-                                                mt-2
-                                            "
-                                        >
-                                            {feature.title}
-                                        </h3>
-
-                                        <p
-                                            className="
-                                                text-sm
-                                                text-gray-600
-                                                mt-2
-                                                leading-relaxed
-                                            "
-                                        >
-                                            {feature.description}
-                                        </p>
-
-                                        <div
-                                            className="
-                                                flex
-                                                items-center
-                                                gap-2
-                                                mt-5
-                                                text-green-700
-                                                text-sm
-                                                font-black
-                                            "
-                                        >
-                                            Ask AI
-                                            <ArrowRight
-                                                size={16}
-                                                className="
+                                return (
+                                    <motion.button
+                                        key={
+                                            feature.title
+                                        }
+                                        type="button"
+                                        onClick={() =>
+                                            handleFeatureClick(
+                                                feature
+                                            )
+                                        }
+                                        initial={
+                                            reduceMotion
+                                                ? false
+                                                : {
+                                                      opacity: 0,
+                                                      y: 25,
+                                                  }
+                                        }
+                                        whileInView={
+                                            reduceMotion
+                                                ? {}
+                                                : {
+                                                      opacity: 1,
+                                                      y: 0,
+                                                  }
+                                        }
+                                        viewport={{
+                                            once: true,
+                                            amount: 0.15,
+                                        }}
+                                        transition={{
+                                            duration: 0.45,
+                                            delay:
+                                                index *
+                                                0.08,
+                                        }}
+                                        whileHover={
+                                            reduceMotion
+                                                ? {}
+                                                : {
+                                                      y: -6,
+                                                  }
+                                        }
+                                        whileTap={
+                                            reduceMotion
+                                                ? {}
+                                                : {
+                                                      scale: 0.98,
+                                                  }
+                                        }
+                                        className={`
+                                            group
+                                            relative
+                                            overflow-hidden
+                                            text-left
+                                            rounded-[2rem]
+                                            bg-gradient-to-br
+                                            ${feature.gradient}
+                                            border
+                                            ${feature.border}
+                                            p-6
+                                            shadow-lg
+                                            transition-shadow
+                                            duration-200
+                                            hover:shadow-2xl
+                                            cursor-pointer
+                                            w-full
+                                        `}
+                                        aria-label={`Open ${feature.title}`}
+                                    >
+                                        <div className="relative z-10">
+                                            <div
+                                                className={`
+                                                    w-14
+                                                    h-14
+                                                    rounded-2xl
+                                                    ${feature.iconBg}
+                                                    ${feature.iconColor}
+                                                    flex
+                                                    items-center
+                                                    justify-center
+                                                    mb-5
                                                     transition-transform
                                                     duration-300
-                                                    group-hover:translate-x-1
+                                                    group-hover:scale-110
+                                                `}
+                                            >
+                                                <Icon size={28} />
+                                            </div>
+
+                                            <span
+                                                className="
+                                                    text-[10px]
+                                                    font-black
+                                                    uppercase
+                                                    tracking-[0.18em]
+                                                    text-gray-500
                                                 "
-                                            />
+                                            >
+                                                AI POWERED
+                                            </span>
+
+                                            <h3
+                                                className="
+                                                    text-lg
+                                                    font-black
+                                                    text-gray-800
+                                                    mt-2
+                                                "
+                                            >
+                                                {
+                                                    feature.title
+                                                }
+                                            </h3>
+
+                                            <p
+                                                className="
+                                                    text-sm
+                                                    text-gray-600
+                                                    mt-2
+                                                    leading-relaxed
+                                                "
+                                            >
+                                                {
+                                                    feature.description
+                                                }
+                                            </p>
+
+                                            <div
+                                                className="
+                                                    flex
+                                                    items-center
+                                                    gap-2
+                                                    mt-5
+                                                    text-green-700
+                                                    text-sm
+                                                    font-black
+                                                "
+                                            >
+                                                {feature.action ===
+                                                "chat"
+                                                    ? "Ask AI"
+                                                    : "Open Tool"}
+
+                                                <ArrowRight
+                                                    size={16}
+                                                    className="
+                                                        transition-transform
+                                                        duration-300
+                                                        group-hover:translate-x-1
+                                                    "
+                                                />
+                                            </div>
                                         </div>
-                                    </div>
-                                </motion.button>
-                            );
-                        })}
+                                    </motion.button>
+                                );
+                            }
+                        )}
                     </div>
                 </section>
-
-              
             </div>
 
             {/* ==================================================
@@ -1802,35 +2053,65 @@ function ChatLayout() {
                     md:right-7
                 "
             >
-                {!chatOpen && (
-                    <div
-                        className="
-                            absolute
-                            right-16
-                            md:right-20
-                            bottom-2
-                            bg-white
-                            px-4
-                            py-2.5
-                            rounded-2xl
-                            shadow-lg
-                            border
-                            border-green-100
-                            text-green-700
-                            text-xs
-                            font-bold
-                            whitespace-nowrap
-                        "
-                    >
-                        Ask KrishiSetu AI 🤖
-                    </div>
-                )}
+                <AnimatePresence>
+                    {!chatOpen && (
+                        <motion.div
+                            initial={
+                                reduceMotion
+                                    ? false
+                                    : {
+                                          opacity: 0,
+                                          x: 8,
+                                      }
+                            }
+                            animate={
+                                reduceMotion
+                                    ? {}
+                                    : {
+                                          opacity: 1,
+                                          x: 0,
+                                      }
+                            }
+                            exit={
+                                reduceMotion
+                                    ? {}
+                                    : {
+                                          opacity: 0,
+                                          x: 8,
+                                      }
+                            }
+                            className="
+                                absolute
+                                right-16
+                                md:right-20
+                                bottom-2
+                                bg-white
+                                px-4
+                                py-2.5
+                                rounded-2xl
+                                shadow-lg
+                                border
+                                border-green-100
+                                text-green-700
+                                text-xs
+                                font-bold
+                                whitespace-nowrap
+                            "
+                        >
+                            Ask KrishiSetu AI 🤖
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 <motion.button
                     type="button"
-                    onClick={() =>
-                        setChatOpen((prev) => !prev)
-                    }
+                    onClick={() => {
+                        if (chatOpen) {
+                            setChatOpen(false);
+                        } else {
+                            openChat();
+                        }
+                    }}
                     whileHover={
                         reduceMotion
                             ? {}
@@ -1869,6 +2150,7 @@ function ChatLayout() {
                             ? "Close chat"
                             : "Open chat"
                     }
+                    aria-expanded={chatOpen}
                 >
                     {chatOpen ? (
                         <X size={27} />
@@ -1890,6 +2172,7 @@ function ChatLayout() {
                             duration: reduceMotion
                                 ? 0
                                 : 0.18,
+                            ease: "easeOut",
                         }}
                         className="
                             fixed
@@ -1911,6 +2194,9 @@ function ChatLayout() {
                             flex
                             flex-col
                         "
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="KrishiSetu AI Chat"
                     >
                         {/* HEADER */}
 
@@ -1997,6 +2283,7 @@ function ChatLayout() {
                                     flex
                                     items-center
                                     justify-center
+                                    transition-colors
                                 "
                                 aria-label="Close chat"
                             >

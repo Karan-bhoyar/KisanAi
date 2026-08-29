@@ -1,3 +1,4 @@
+
 import {
     BrowserRouter,
     Routes,
@@ -9,6 +10,8 @@ import type { ReactNode } from "react";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import ScrollToTop from "./components/ScrollToTop";
+
 import ChatLayout from "./components/ChatLayout";
 
 import Login from "./pages/Login/Login";
@@ -20,301 +23,254 @@ import DiseaseHistory from "./pages/DiseaseDetection/DiseaseHistory";
 import FarmerProfile from "./pages/Profile/FarmerProfile";
 import EditProfile from "./pages/Profile/EditProfile";
 
-import ScrollToTop from "./components/ScrollToTop";
-
 import WeatherAgent from "./pages/Weather/WeatherAgent";
 import MarketPrice from "./pages/MarketPrice/MarketPrice";
 
 
-// ===============================
-// Route Props
-// ===============================
+// ======================================================
+// TYPES
+// ======================================================
 
 interface RouteProps {
     children: ReactNode;
 }
 
 
-// ===============================
-// Protected Route
-// ===============================
+// ======================================================
+// PROTECTED ROUTE
+// ======================================================
 
 function ProtectedRoute({ children }: RouteProps) {
 
     const token = localStorage.getItem("token");
 
     if (!token) {
-
         return (
             <Navigate
                 to="/login"
                 replace
             />
         );
-
     }
 
     return <>{children}</>;
 }
 
 
-// ===============================
-// Main Layout
-// ===============================
+// ======================================================
+// MAIN LAYOUT
+// ======================================================
 
 function MainLayout({ children }: RouteProps) {
 
     return (
+        <div className="min-h-screen flex flex-col bg-gray-100">
 
-        <div
-            className="
-                min-h-screen
-                flex
-                flex-col
-                bg-gray-100
-            "
-        >
-
-            {/* Navbar */}
+            {/* =============================== */}
+            {/* NAVBAR */}
+            {/* =============================== */}
 
             <Navbar />
 
 
-            {/* Page Content */}
+            {/* =============================== */}
+            {/* PAGE CONTENT */}
+            {/* =============================== */}
 
-            <main className="flex-1">
-
+            <main className="flex-1 w-full">
                 {children}
-
             </main>
 
 
-            {/* Footer */}
+            {/* =============================== */}
+            {/* FOOTER */}
+            {/* =============================== */}
 
             <Footer />
 
         </div>
-
     );
 }
 
 
-// ===============================
-// App
-// ===============================
+// ======================================================
+// APP
+// ======================================================
 
 function App() {
 
     return (
-
         <BrowserRouter>
 
-            {/* Scroll reset when route changes */}
+            {/* ========================================= */}
+            {/* SCROLL TO TOP */}
+            {/* ========================================= */}
 
             <ScrollToTop />
 
 
             <Routes>
 
-
-                {/* ================================= */}
-                {/* LOGIN */}
-                {/* ================================= */}
+                {/* ========================================= */}
+                {/* PUBLIC ROUTES */}
+                {/* ========================================= */}
 
                 <Route
                     path="/login"
-                    element={
-                        <Login />
-                    }
+                    element={<Login />}
                 />
-
-
-                {/* ================================= */}
-                {/* SIGNUP */}
-                {/* ================================= */}
 
                 <Route
                     path="/signup"
-                    element={
-                        <Signup />
-                    }
+                    element={<Signup />}
                 />
 
 
-                {/* ================================= */}
-                {/* AI CHAT / HOME */}
-                {/* ================================= */}
+                {/* ========================================= */}
+                {/* HOME */}
+                {/* ========================================= */}
 
                 <Route
                     path="/"
                     element={
-
                         <ProtectedRoute>
-
                             <MainLayout>
-
                                 <ChatLayout />
-
                             </MainLayout>
-
                         </ProtectedRoute>
-
                     }
                 />
 
 
-                {/* ================================= */}
+                {/* ========================================= */}
+                {/* AI CHAT */}
+                {/* ========================================= */}
+
+                <Route
+                    path="/chat"
+                    element={
+                        <ProtectedRoute>
+                            <MainLayout>
+                                <ChatLayout />
+                            </MainLayout>
+                        </ProtectedRoute>
+                    }
+                />
+
+
+                {/* ========================================= */}
                 {/* DISEASE DETECTION */}
-                {/* ================================= */}
+                {/* ========================================= */}
 
                 <Route
                     path="/disease"
                     element={
-
                         <ProtectedRoute>
-
                             <MainLayout>
-
                                 <DiseaseDetectionPage />
-
                             </MainLayout>
-
                         </ProtectedRoute>
-
                     }
                 />
 
 
-                {/* ================================= */}
+                {/* ========================================= */}
                 {/* DISEASE HISTORY */}
-                {/* ================================= */}
+                {/* ========================================= */}
 
                 <Route
                     path="/disease/history"
                     element={
-
                         <ProtectedRoute>
-
                             <MainLayout>
-
                                 <DiseaseHistory />
-
                             </MainLayout>
-
                         </ProtectedRoute>
-
                     }
                 />
 
 
-                {/* ================================= */}
+                {/* ========================================= */}
                 {/* WEATHER */}
-                {/* ================================= */}
+                {/* ========================================= */}
 
                 <Route
                     path="/weather"
                     element={
-
                         <ProtectedRoute>
-
                             <MainLayout>
-
                                 <WeatherAgent />
-
                             </MainLayout>
-
                         </ProtectedRoute>
-
                     }
                 />
 
 
-                {/* ================================= */}
-                {/* MARKET PRICES */}
-                {/* ================================= */}
+                {/* ========================================= */}
+                {/* MARKET PRICE */}
+                {/* ========================================= */}
 
                 <Route
                     path="/market-price"
                     element={
-
                         <ProtectedRoute>
-
                             <MainLayout>
-
                                 <MarketPrice />
-
                             </MainLayout>
-
                         </ProtectedRoute>
-
                     }
                 />
 
 
-                {/* ================================= */}
+                {/* ========================================= */}
                 {/* FARMER PROFILE */}
-                {/* ================================= */}
+                {/* ========================================= */}
 
                 <Route
                     path="/profile"
                     element={
-
                         <ProtectedRoute>
-
                             <MainLayout>
-
                                 <FarmerProfile />
-
                             </MainLayout>
-
                         </ProtectedRoute>
-
                     }
                 />
 
 
-                {/* ================================= */}
+                {/* ========================================= */}
                 {/* EDIT PROFILE */}
-                {/* ================================= */}
+                {/* ========================================= */}
 
                 <Route
                     path="/profile/edit"
                     element={
-
                         <ProtectedRoute>
-
                             <MainLayout>
-
                                 <EditProfile />
-
                             </MainLayout>
-
                         </ProtectedRoute>
-
                     }
                 />
 
 
-                {/* ================================= */}
-                {/* DEFAULT REDIRECT */}
-                {/* ================================= */}
+                {/* ========================================= */}
+                {/* FALLBACK */}
+                {/* ========================================= */}
 
                 <Route
                     path="*"
                     element={
-
                         <Navigate
                             to="/"
                             replace
                         />
-
                     }
                 />
 
             </Routes>
 
         </BrowserRouter>
-
     );
 }
 
