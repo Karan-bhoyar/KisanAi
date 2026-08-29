@@ -1,4 +1,3 @@
-
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, HTTPException, status
@@ -11,29 +10,15 @@ from app.core.config import settings
 from app.database.session import get_db
 from app.repositories.user_repository import UserRepository
 
-
-# ======================================================
-# PASSWORD HASHING
-# ======================================================
-
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto",
 )
 
-
-# ======================================================
-# OAUTH2
-# ======================================================
-
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/auth/login"
 )
 
-
-# ======================================================
-# PASSWORD FUNCTIONS
-# ======================================================
 
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
@@ -49,17 +34,7 @@ def verify_password(
     )
 
 
-# ======================================================
-# JWT FUNCTIONS
-# ======================================================
-
 def create_access_token(data: dict):
-
-    Create JWT access token.
-
-    Token expiration is controlled by:
-    settings.ACCESS_TOKEN_EXPIRE_MINUTES
-
     to_encode = data.copy()
 
     expire = datetime.now(timezone.utc) + timedelta(
@@ -78,14 +53,6 @@ def create_access_token(data: dict):
 
 
 def verify_access_token(token: str):
-    """
-    Verify JWT token.
-
-    Returns:
-        payload -> valid token
-        None    -> invalid/expired token
-    """
-
     try:
         payload = jwt.decode(
             token,
@@ -99,23 +66,11 @@ def verify_access_token(token: str):
         return None
 
 
-# ======================================================
-# CURRENT LOGGED-IN USER
-# ======================================================
-
 def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ):
-    """
-    Get currently authenticated user from JWT token.
-    """
-
     payload = verify_access_token(token)
-
-    # --------------------------------------------------
-    # Invalid or expired token
-    # --------------------------------------------------
 
     if payload is None:
         raise HTTPException(
@@ -125,10 +80,6 @@ def get_current_user(
                 "WWW-Authenticate": "Bearer",
             },
         )
-
-    # --------------------------------------------------
-    # Get email from JWT
-    # --------------------------------------------------
 
     email = payload.get("sub")
 
@@ -140,10 +91,6 @@ def get_current_user(
                 "WWW-Authenticate": "Bearer",
             },
         )
-
-    # --------------------------------------------------
-    # Find user
-    # --------------------------------------------------
 
     user = UserRepository.get_by_email(
         db,
@@ -158,10 +105,6 @@ def get_current_user(
                 "WWW-Authenticate": "Bearer",
             },
         )
-
-    # --------------------------------------------------
-    # Check whether account is active
-    # --------------------------------------------------
 
     if not user.is_active:
         raise HTTPException(
