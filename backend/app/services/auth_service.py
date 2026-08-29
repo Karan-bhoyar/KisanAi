@@ -1,3 +1,4 @@
+
 from sqlalchemy.orm import Session
 
 from app.core.security import (
@@ -13,26 +14,35 @@ from app.schemas.user_schema import UserRegister
 
 class AuthService:
 
+    # ======================================================
+    # REGISTER
+    # ======================================================
+
     @staticmethod
     def register(
         db: Session,
-        user_data: UserRegister
+        user_data: UserRegister,
     ):
-
         print("\n========== REGISTER DEBUG ==========")
         print("Email:", user_data.email)
         print("====================================")
 
+        # --------------------------------------------------
         # Check whether email already exists
+        # --------------------------------------------------
+
         existing = UserRepository.get_by_email(
             db,
-            user_data.email.strip()
+            user_data.email.strip(),
         )
 
         if existing:
             raise Exception("Email already exists")
 
+        # --------------------------------------------------
         # Create user
+        # --------------------------------------------------
+
         user = User(
             full_name=user_data.full_name,
             email=user_data.email.strip(),
@@ -46,7 +56,7 @@ class AuthService:
 
         created_user = UserRepository.create(
             db,
-            user
+            user,
         )
 
         print("✅ Registration Successful")
@@ -55,24 +65,32 @@ class AuthService:
 
         return created_user
 
+    # ======================================================
+    # LOGIN
+    # ======================================================
 
     @staticmethod
     def login(
         db: Session,
         email: str,
-        password: str
+        password: str,
     ):
-
         print("\n========== LOGIN DEBUG ==========")
         print("Entered Email:", email)
 
+        # --------------------------------------------------
         # Find user by email
+        # --------------------------------------------------
+
         user = UserRepository.get_by_email(
             db,
-            email.strip()
+            email.strip(),
         )
 
+        # --------------------------------------------------
         # User not found
+        # --------------------------------------------------
+
         if user is None:
             print("❌ User not found")
             print("================================")
@@ -82,18 +100,25 @@ class AuthService:
         print("User ID:", user.id)
         print("User Active:", user.is_active)
 
+        # --------------------------------------------------
         # Check account status
+        # --------------------------------------------------
+
         if not user.is_active:
             print("❌ User account is inactive")
             print("================================")
             return None
 
+        # --------------------------------------------------
         # Verify password
+        # --------------------------------------------------
+
         try:
             is_valid = verify_password(
                 password,
-                user.password_hash
+                user.password_hash,
             )
+
         except Exception as e:
             print("❌ Password verification error:", e)
             print("================================")
@@ -101,23 +126,31 @@ class AuthService:
 
         print("Password Match:", is_valid)
 
+        # --------------------------------------------------
         # Invalid password
+        # --------------------------------------------------
+
         if not is_valid:
             print("❌ Invalid Password")
             print("================================")
             return None
 
+        # --------------------------------------------------
         # Create JWT token
+        # Expiration is handled inside create_access_token()
+        # --------------------------------------------------
+
         token_data = {
             "sub": user.email,
             "role": user.role.value,
         }
 
         token = create_access_token(
-            token_data
+            token_data,
         )
 
         print("✅ Login Successful")
+        print("JWT Token Created Successfully")
         print("================================")
 
         return token
