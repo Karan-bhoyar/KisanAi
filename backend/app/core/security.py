@@ -1,4 +1,4 @@
-```python
+
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, HTTPException, status
