@@ -1,4 +1,5 @@
 import {
+    useCallback,
     useEffect,
     useRef,
     useState,
@@ -20,11 +21,14 @@ import {
     Bot,
     Zap,
     Shield,
+    UserRound,
+    Brain,
 } from "lucide-react";
 
 import {
     motion,
     AnimatePresence,
+    useReducedMotion,
 } from "framer-motion";
 
 import MessageBubble from "./MessageBubble";
@@ -48,13 +52,73 @@ interface Message {
 type Language = "hi" | "mr" | "en";
 
 // ======================================================
+// FEATURES
+// ======================================================
+
+const FEATURES = [
+    {
+        title: "Crop Recommendation",
+        description:
+            "Find suitable crops based on season, soil and farming conditions.",
+        question:
+            "Which crop should I grow based on my soil and season?",
+        icon: Sprout,
+        iconBg: "bg-emerald-100",
+        iconColor: "text-emerald-600",
+        border: "border-emerald-200",
+        gradient:
+            "from-emerald-50 via-white to-green-50",
+    },
+    {
+        title: "Disease Detection",
+        description:
+            "Identify crop diseases and get practical prevention guidance.",
+        question:
+            "How can I identify and prevent crop diseases?",
+        icon: Bug,
+        iconBg: "bg-red-100",
+        iconColor: "text-red-500",
+        border: "border-red-200",
+        gradient:
+            "from-red-50 via-white to-orange-50",
+    },
+    {
+        title: "Weather Guidance",
+        description:
+            "Plan irrigation, spraying and farm activities with weather insights.",
+        question:
+            "How should I plan my farming activities according to weather?",
+        icon: CloudSun,
+        iconBg: "bg-blue-100",
+        iconColor: "text-blue-500",
+        border: "border-blue-200",
+        gradient:
+            "from-blue-50 via-white to-cyan-50",
+    },
+    {
+        title: "Government Schemes",
+        description:
+            "Discover useful government schemes and benefits available for farmers.",
+        question:
+            "Which government schemes are available for farmers?",
+        icon: ShieldCheck,
+        iconBg: "bg-purple-100",
+        iconColor: "text-purple-500",
+        border: "border-purple-200",
+        gradient:
+            "from-purple-50 via-white to-indigo-50",
+    },
+];
+
+// ======================================================
 // COMPONENT
 // ======================================================
 
 function ChatLayout() {
+    const reduceMotion = useReducedMotion();
 
     // ==================================================
-    // CHAT STATE
+    // STATE
     // ==================================================
 
     const [messages, setMessages] = useState<Message[]>([
@@ -66,21 +130,7 @@ function ChatLayout() {
     ]);
 
     const [loading, setLoading] = useState(false);
-
     const [chatOpen, setChatOpen] = useState(false);
-
-    // ==================================================
-    // VOICE PROCESSING STATE
-    // ==================================================
-
-    /*
-     * true:
-     * Voice recording / speech processing chal raha hai
-     *
-     * false:
-     * Voice message successfully chat me display ho gaya
-     */
-
     const [voiceProcessing, setVoiceProcessing] =
         useState(false);
 
@@ -91,19 +141,76 @@ function ChatLayout() {
     const chatEndRef =
         useRef<HTMLDivElement | null>(null);
 
+    const historyLoadedRef = useRef(false);
+
     // ==================================================
     // LOAD CHAT HISTORY
     // ==================================================
 
     useEffect(() => {
+        const token = localStorage.getItem("token");
 
-        const token =
-            localStorage.getItem("token");
-
-        if (token) {
-            loadHistory();
+        if (!token || historyLoadedRef.current) {
+            return;
         }
 
+        historyLoadedRef.current = true;
+
+        const loadHistory = async () => {
+            try {
+                const data = await getChatHistory();
+
+                if (!Array.isArray(data)) {
+                    return;
+                }
+
+                const history: Message[] = data
+                    .slice()
+                    .reverse()
+                    .flatMap((chat: any) => {
+                        const result: Message[] = [];
+
+                        if (
+                            typeof chat.message === "string" &&
+                            chat.message.trim()
+                        ) {
+                            result.push({
+                                role: "user",
+                                text: chat.message,
+                            });
+                        }
+
+                        if (
+                            typeof chat.response === "string" &&
+                            chat.response.trim()
+                        ) {
+                            result.push({
+                                role: "ai",
+                                text: chat.response,
+                            });
+                        }
+
+                        return result;
+                    });
+
+                if (history.length > 0) {
+                    setMessages((prev) => [
+                        ...prev,
+                        ...history,
+                    ]);
+                }
+            } catch (error: any) {
+                console.error(
+                    "CHAT HISTORY ERROR:",
+                    error.response?.status,
+                    error.response?.data ||
+                        error.message ||
+                        error
+                );
+            }
+        };
+
+        loadHistory();
     }, []);
 
     // ==================================================
@@ -111,476 +218,191 @@ function ChatLayout() {
     // ==================================================
 
     useEffect(() => {
-
-        if (chatOpen) {
-
-            chatEndRef.current?.scrollIntoView({
-                behavior: "smooth",
-            });
-
+        if (!chatOpen) {
+            return;
         }
 
+        requestAnimationFrame(() => {
+            chatEndRef.current?.scrollIntoView({
+                behavior: "auto",
+                block: "end",
+            });
+        });
     }, [
-        messages,
+        messages.length,
         loading,
         voiceProcessing,
         chatOpen,
     ]);
 
     // ==================================================
-    // LOAD HISTORY
-    // ==================================================
-
-    const loadHistory = async () => {
-
-        try {
-
-            const data =
-                await getChatHistory();
-
-            if (!Array.isArray(data)) {
-
-                console.error(
-                    "Invalid chat history:",
-                    data
-                );
-
-                return;
-            }
-
-            const history: Message[] =
-                data
-                    .slice()
-                    .reverse()
-                    .flatMap(
-                        (chat: any) => [
-
-                            {
-                                role: "user" as const,
-                                text: chat.message,
-                            },
-
-                            {
-                                role: "ai" as const,
-                                text: chat.response,
-                            },
-
-                        ]
-                    );
-
-            setMessages((prev) => [
-
-                ...prev,
-
-                ...history,
-
-            ]);
-
-        }
-
-        catch (error: any) {
-
-            console.error(
-                "CHAT HISTORY ERROR:",
-                error.response?.data ||
-                error.message ||
-                error
-            );
-
-        }
-
-    };
-
-    // ==================================================
     // SEND MESSAGE
     // ==================================================
 
-    const handleSend = async (
-        message: string,
-        language: Language
-    ) => {
+    const handleSend = useCallback(
+        async (
+            message: string,
+            language: Language
+        ) => {
+            const trimmedMessage =
+                message.trim();
 
-        if (!message.trim()) {
+            if (!trimmedMessage) {
+                setVoiceProcessing(false);
+                return;
+            }
 
-            /*
-             * Agar voice processing chal raha tha
-             * aur empty response mila,
-             * loader ko stop kar do.
-             */
+            const token =
+                localStorage.getItem("token");
 
-            setVoiceProcessing(false);
+            if (!token) {
+                setVoiceProcessing(false);
 
-            return;
-        }
-
-        const token =
-            localStorage.getItem("token");
-
-        if (!token) {
-
-            setVoiceProcessing(false);
-
-            alert(
-                "Please login first."
-            );
-
-            window.location.href =
-                "/login";
-
-            return;
-        }
-
-        // ==================================================
-        // USER MESSAGE
-        // ==================================================
-
-        setMessages((prev) => [
-
-            ...prev,
-
-            {
-                role: "user",
-                text: message,
-            },
-
-        ]);
-
-        // ==================================================
-        // START AI LOADING
-        // ==================================================
-
-        setLoading(true);
-
-        try {
-
-            const data =
-                await sendMessage(
-                    message,
-                    language
-                );
-
-            // ==================================================
-            // INVALID RESPONSE
-            // ==================================================
-
-            if (
-                !data ||
-                typeof data.response !== "string"
-            ) {
-
-                setMessages((prev) => [
-
-                    ...prev,
-
-                    {
-                        role: "ai",
-                        text:
-                            "❌ AI ne valid response nahi diya.",
-                    },
-
-                ]);
+                window.location.href =
+                    "/login";
 
                 return;
             }
 
-            // ==================================================
-            // AI RESPONSE
-            // ==================================================
-
             setMessages((prev) => [
-
                 ...prev,
-
                 {
-                    role: "ai",
-                    text: data.response,
+                    role: "user",
+                    text: trimmedMessage,
                 },
-
             ]);
 
-        }
+            setLoading(true);
 
-        catch (error: any) {
+            try {
+                const data = await sendMessage(
+                    trimmedMessage,
+                    language
+                );
 
-            console.error(
-                "CHAT API ERROR:",
-                error.response?.status,
-                error.response?.data ||
-                error.message ||
-                error
-            );
+                if (
+                    !data ||
+                    typeof data.response !== "string"
+                ) {
+                    setMessages((prev) => [
+                        ...prev,
+                        {
+                            role: "ai",
+                            text:
+                                "❌ AI ne valid response nahi diya.",
+                        },
+                    ]);
 
-            let errorMessage =
-                "❌ Server response nahi aaya.";
+                    return;
+                }
 
-            // ==================================================
-            // 401
-            // ==================================================
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        role: "ai",
+                        text: data.response,
+                    },
+                ]);
+            } catch (error: any) {
+                console.error(
+                    "CHAT API ERROR:",
+                    error.response?.status,
+                    error.response?.data ||
+                        error.message ||
+                        error
+                );
 
-            if (
-                error.response?.status === 401
-            ) {
+                let errorMessage =
+                    "❌ Server response nahi aaya.";
 
-                errorMessage =
-                    "❌ Session expired. Please login again.";
+                if (
+                    error.response?.status === 401
+                ) {
+                    errorMessage =
+                        "❌ Session expired. Please login again.";
+                } else if (
+                    error.response?.status === 404
+                ) {
+                    errorMessage =
+                        "❌ Service not found. Please login again.";
+                } else if (
+                    error.response?.status === 500
+                ) {
+                    errorMessage =
+                        "❌ Backend server error. Please try again.";
+                } else if (
+                    error.message === "Network Error"
+                ) {
+                    errorMessage =
+                        "❌ Backend se connection nahi ho raha.";
+                }
 
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        role: "ai",
+                        text: errorMessage,
+                    },
+                ]);
+            } finally {
+                setLoading(false);
+                setVoiceProcessing(false);
             }
-
-            // ==================================================
-            // 500
-            // ==================================================
-
-            else if (
-                error.response?.status === 500
-            ) {
-
-                errorMessage =
-                    "❌ Backend server error. Please try again.";
-
-            }
-
-            // ==================================================
-            // NETWORK ERROR
-            // ==================================================
-
-            else if (
-                error.message ===
-                "Network Error"
-            ) {
-
-                errorMessage =
-                    "❌ Backend se connection nahi ho raha.";
-
-            }
-
-            // ==================================================
-            // SHOW ERROR
-            // ==================================================
-
-            setMessages((prev) => [
-
-                ...prev,
-
-                {
-                    role: "ai",
-                    text: errorMessage,
-                },
-
-            ]);
-
-        }
-
-        finally {
-
-            // ==================================================
-            // STOP AI LOADING
-            // ==================================================
-
-            setLoading(false);
-
-            /*
-             * IMPORTANT:
-             *
-             * Voice circle yahan stop hoga.
-             *
-             * Matlab:
-             *
-             * Voice →
-             * Processing →
-             * Message added →
-             * AI response →
-             * voiceProcessing false
-             */
-
-            setVoiceProcessing(false);
-
-        }
-
-    };
+        },
+        []
+    );
 
     // ==================================================
-    // VOICE PROCESSING CALLBACK
+    // VOICE PROCESSING
     // ==================================================
-
-    /*
-     * ChatInput se call hoga.
-     *
-     * true  = voice processing start
-     * false = voice processing finished
-     */
 
     const handleVoiceProcessing =
-        (processing: boolean) => {
-
-            setVoiceProcessing(
-                processing
-            );
-
-        };
+        useCallback((processing: boolean) => {
+            setVoiceProcessing(processing);
+        }, []);
 
     // ==================================================
     // QUICK QUESTION
     // ==================================================
 
-    const handleQuickQuestion = (
-        question: string
-    ) => {
+    const handleQuickQuestion = useCallback(
+        (question: string) => {
+            setChatOpen(true);
 
-        setChatOpen(true);
-
-        handleSend(
-            question,
-            "en"
-        );
-
-    };
+            void handleSend(
+                question,
+                "en"
+            );
+        },
+        [handleSend]
+    );
 
     // ==================================================
-    // FEATURE DATA
+    // CHAT ANIMATION
     // ==================================================
 
-    const features = [
-
-        {
-            title:
-                "Crop Recommendation",
-
-            description:
-                "Find suitable crops based on season, soil and farming conditions.",
-
-            icon: Sprout,
-
-            iconBg:
-                "bg-emerald-100",
-
-            iconColor:
-                "text-emerald-600",
-
-            border:
-                "border-emerald-200",
-
-            gradient:
-                "from-emerald-50 via-white to-green-100",
-
-            glow:
-                "bg-emerald-400/20",
-
-            question:
-                "Which crop should I grow based on my soil and season?",
-        },
-
-        {
-            title:
-                "Disease Detection",
-
-            description:
-                "Get AI assistance to understand crop diseases and prevention.",
-
-            icon: Bug,
-
-            iconBg:
-                "bg-rose-100",
-
-            iconColor:
-                "text-rose-600",
-
-            border:
-                "border-rose-200",
-
-            gradient:
-                "from-rose-50 via-white to-red-100",
-
-            glow:
-                "bg-rose-400/20",
-
-            question:
-                "How can I identify and prevent crop diseases?",
-        },
-
-        {
-            title:
-                "Weather Guidance",
-
-            description:
-                "Understand weather conditions and plan farming activities.",
-
-            icon: CloudSun,
-
-            iconBg:
-                "bg-sky-100",
-
-            iconColor:
-                "text-sky-600",
-
-            border:
-                "border-sky-200",
-
-            gradient:
-                "from-sky-50 via-white to-cyan-100",
-
-            glow:
-                "bg-sky-400/20",
-
-            question:
-                "What weather conditions should I consider for farming?",
-        },
-
-        {
-            title:
-                "Government Schemes",
-
-            description:
-                "Discover useful government schemes and farmer benefits.",
-
-            icon: ShieldCheck,
-
-            iconBg:
-                "bg-violet-100",
-
-            iconColor:
-                "text-violet-600",
-
-            border:
-                "border-violet-200",
-
-            gradient:
-                "from-violet-50 via-white to-purple-100",
-
-            glow:
-                "bg-violet-400/20",
-
-            question:
-                "What government schemes are available for farmers?",
-        },
-
-    ];
-
-    // ==================================================
-    // ANIMATION VARIANTS
-    // ==================================================
-
-    const cardVariants = {
-
-        hidden: {
-            opacity: 0,
-            y: 50,
-            scale: 0.94,
-        },
-
-        visible: {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-        },
-
-    };
+    const chatAnimation = reduceMotion
+        ? {}
+        : {
+              initial: {
+                  opacity: 0,
+                  y: 12,
+              },
+              animate: {
+                  opacity: 1,
+                  y: 0,
+              },
+              exit: {
+                  opacity: 0,
+                  y: 12,
+              },
+          };
 
     // ==================================================
     // UI
     // ==================================================
 
     return (
-
         <div
             className="
                 relative
@@ -598,10 +420,7 @@ function ChatLayout() {
                 pb-32
             "
         >
-
-            {/* ==================================================
-                BACKGROUND PAINT / GLOW
-            ================================================== */}
+            {/* BACKGROUND */}
 
             <div
                 className="
@@ -611,175 +430,45 @@ function ChatLayout() {
                     overflow-hidden
                 "
             >
-
-                {/* GREEN PAINT */}
-
-                <motion.div
-                    animate={{
-                        x: [0, 80, 0],
-                        y: [0, 60, 0],
-                        scale: [1, 1.2, 1],
-                    }}
-                    transition={{
-                        duration: 12,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                    }}
+                <div
                     className="
                         absolute
                         -top-40
                         -left-40
-                        w-[600px]
-                        h-[600px]
+                        w-96
+                        h-96
                         rounded-full
-                        bg-green-400/25
-                        blur-[120px]
+                        bg-green-400/10
+                        blur-3xl
                     "
                 />
 
-                {/* EMERALD PAINT */}
-
-                <motion.div
-                    animate={{
-                        x: [0, -70, 0],
-                        y: [0, 80, 0],
-                        scale: [1, 1.15, 1],
-                    }}
-                    transition={{
-                        duration: 14,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                    }}
+                <div
                     className="
                         absolute
-                        top-[15%]
-                        -right-48
-                        w-[650px]
-                        h-[650px]
+                        top-1/4
+                        -right-40
+                        w-96
+                        h-96
                         rounded-full
-                        bg-emerald-400/20
-                        blur-[130px]
+                        bg-emerald-400/10
+                        blur-3xl
                     "
                 />
-
-                {/* LIME PAINT */}
-
-                <motion.div
-                    animate={{
-                        x: [0, 50, 0],
-                        y: [0, -50, 0],
-                    }}
-                    transition={{
-                        duration: 11,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                    }}
-                    className="
-                        absolute
-                        bottom-[-250px]
-                        left-[20%]
-                        w-[650px]
-                        h-[550px]
-                        rounded-full
-                        bg-lime-300/15
-                        blur-[140px]
-                    "
-                />
-
-                {/* BLUE PAINT */}
-
-                <motion.div
-                    animate={{
-                        x: [0, -40, 0],
-                        y: [0, 30, 0],
-                    }}
-                    transition={{
-                        duration: 15,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                    }}
-                    className="
-                        absolute
-                        top-[45%]
-                        left-[35%]
-                        w-[450px]
-                        h-[450px]
-                        rounded-full
-                        bg-cyan-400/10
-                        blur-[120px]
-                    "
-                />
-
             </div>
 
-            {/* ==================================================
-                DOT PATTERN
-            ================================================== */}
+            {/* DOT PATTERN */}
 
             <div
                 className="
                     pointer-events-none
                     absolute
                     inset-0
-                    opacity-[0.12]
+                    opacity-[0.06]
                     bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)]
                     bg-[size:30px_30px]
                 "
             />
-
-            {/* ==================================================
-                FLOATING LEAVES
-            ================================================== */}
-
-            <motion.div
-                animate={{
-                    y: [0, -25, 0],
-                    rotate: [0, 12, 0],
-                }}
-                transition={{
-                    duration: 6,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                }}
-                className="
-                    pointer-events-none
-                    absolute
-                    top-[15%]
-                    left-[2%]
-                    hidden
-                    lg:block
-                    text-green-200/10
-                "
-            >
-
-                <Leaf size={150} />
-
-            </motion.div>
-
-            <motion.div
-                animate={{
-                    y: [0, 25, 0],
-                    rotate: [0, -12, 0],
-                }}
-                transition={{
-                    duration: 7,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                }}
-                className="
-                    pointer-events-none
-                    absolute
-                    top-[45%]
-                    right-[2%]
-                    hidden
-                    lg:block
-                    text-emerald-200/10
-                "
-            >
-
-                <Sprout size={160} />
-
-            </motion.div>
 
             {/* ==================================================
                 MAIN
@@ -793,23 +482,11 @@ function ChatLayout() {
                     mx-auto
                 "
             >
-
                 {/* ==================================================
                     HERO
                 ================================================== */}
 
-                <motion.section
-                    initial={{
-                        opacity: 0,
-                        y: -40,
-                    }}
-                    animate={{
-                        opacity: 1,
-                        y: 0,
-                    }}
-                    transition={{
-                        duration: 0.8,
-                    }}
+                <section
                     className="
                         text-center
                         max-w-5xl
@@ -817,106 +494,78 @@ function ChatLayout() {
                         mb-14
                     "
                 >
-
                     {/* LOGO */}
 
                     <motion.div
-                        initial={{
-                            opacity: 0,
-                            scale: 0.5,
-                            rotate: -30,
-                        }}
-                        animate={{
-                            opacity: 1,
-                            scale: 1,
-                            rotate: 0,
-                        }}
+                        initial={
+                            reduceMotion
+                                ? false
+                                : {
+                                      opacity: 0,
+                                      scale: 0.8,
+                                  }
+                        }
+                        animate={
+                            reduceMotion
+                                ? {}
+                                : {
+                                      opacity: 1,
+                                      scale: 1,
+                                  }
+                        }
                         transition={{
-                            duration: 1,
-                            ease: "easeOut",
+                            duration: 0.6,
                         }}
                         className="
                             relative
                             mx-auto
-                            w-32
-                            h-32
-                            md:w-40
-                            md:h-40
+                            w-28
+                            h-28
+                            md:w-36
+                            md:h-36
                             mb-8
                             flex
                             items-center
                             justify-center
                         "
                     >
-
-                        <motion.div
-                            animate={{
-                                rotate: 360,
-                            }}
-                            transition={{
-                                duration: 10,
-                                repeat: Infinity,
-                                ease: "linear",
-                            }}
+                        <div
                             className="
                                 absolute
-                                inset-[-15px]
+                                inset-[-10px]
                                 rounded-full
                                 border
                                 border-dashed
-                                border-green-300/40
+                                border-green-300/25
                             "
                         />
 
                         <motion.div
-                            animate={{
-                                scale: [
-                                    0.8,
-                                    1.4,
-                                    1.7,
-                                ],
-                                opacity: [
-                                    0.5,
-                                    0.2,
-                                    0,
-                                ],
-                            }}
+                            animate={
+                                reduceMotion
+                                    ? {}
+                                    : {
+                                          rotate: [0, 3, -3, 0],
+                                      }
+                            }
                             transition={{
-                                duration: 2.5,
-                                repeat: Infinity,
-                            }}
-                            className="
-                                absolute
-                                w-28
-                                h-28
-                                rounded-full
-                                border-2
-                                border-green-300
-                            "
-                        />
-
-                        <motion.div
-                            animate={{
-                                y: [0, -7, 0],
-                            }}
-                            transition={{
-                                duration: 3,
+                                duration: 5,
                                 repeat: Infinity,
                                 ease: "easeInOut",
                             }}
                             className="
                                 relative
                                 z-10
-                                w-28
-                                h-28
-                                md:w-32
-                                md:h-32
+                                w-24
+                                h-24
+                                md:w-28
+                                md:h-28
                                 rounded-[2rem]
                                 bg-gradient-to-br
                                 from-green-900
                                 via-emerald-600
                                 to-green-400
-                                shadow-[0_25px_70px_rgba(16,185,129,0.45)]
+                                shadow-xl
                                 flex
                                 items-center
                                 justify-center
@@ -925,126 +574,49 @@ function ChatLayout() {
                                 border-white/20
                             "
                         >
-
                             <div
                                 className="
-                                    absolute
-                                    inset-0
-                                    opacity-20
-                                    bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)]
-                                    bg-[size:12px_12px]
-                                "
-                            />
-
-                            <motion.div
-                                animate={{
-                                    rotate: 360,
-                                }}
-                                transition={{
-                                    duration: 5,
-                                    repeat: Infinity,
-                                    ease: "linear",
-                                }}
-                                className="
-                                    absolute
-                                    w-20
-                                    h-20
-                                    rounded-full
-                                    border
-                                    border-white/30
-                                    border-t-white
-                                "
-                            />
-
-                            <motion.div
-                                animate={{
-                                    scale: [
-                                        1,
-                                        1.12,
-                                        1,
-                                    ],
-                                }}
-                                transition={{
-                                    duration: 2,
-                                    repeat: Infinity,
-                                }}
-                                className="
-                                    relative
-                                    z-10
                                     w-14
                                     h-14
                                     rounded-full
                                     bg-white
-                                    shadow-xl
+                                    shadow-lg
                                     flex
                                     items-center
                                     justify-center
                                 "
                             >
-
                                 <Sprout
                                     size={34}
                                     className="text-green-700"
-                                    strokeWidth={2.4}
                                 />
-
-                            </motion.div>
-
-                            <motion.span
-                                animate={{
-                                    y: [-8, 8, -8],
-                                    opacity: [
-                                        0.3,
-                                        1,
-                                        0.3,
-                                    ],
-                                }}
-                                transition={{
-                                    duration: 2,
-                                    repeat: Infinity,
-                                }}
-                                className="
-                                    absolute
-                                    top-4
-                                    left-5
-                                    w-2.5
-                                    h-2.5
-                                    rounded-full
-                                    bg-yellow-300
-                                "
-                            />
-
-                            <motion.span
-                                animate={{
-                                    y: [8, -8, 8],
-                                    opacity: [
-                                        0.3,
-                                        1,
-                                        0.3,
-                                    ],
-                                }}
-                                transition={{
-                                    duration: 2.2,
-                                    repeat: Infinity,
-                                }}
-                                className="
-                                    absolute
-                                    bottom-5
-                                    right-5
-                                    w-2.5
-                                    h-2.5
-                                    rounded-full
-                                    bg-cyan-200
-                                "
-                            />
-
+                            </div>
                         </motion.div>
-
                     </motion.div>
 
                     {/* TITLE */}
 
-                    <h1
+                    <motion.h1
+                        initial={
+                            reduceMotion
+                                ? false
+                                : {
+                                      opacity: 0,
+                                      y: 20,
+                                  }
+                        }
+                        animate={
+                            reduceMotion
+                                ? {}
+                                : {
+                                      opacity: 1,
+                                      y: 0,
+                                  }
+                        }
+                        transition={{
+                            duration: 0.6,
+                            delay: 0.1,
+                        }}
                         className="
                             text-4xl
                             md:text-6xl
@@ -1054,9 +626,7 @@ function ChatLayout() {
                             text-white
                         "
                     >
-
                         Smart Farming
-
                         <br />
 
                         <span
@@ -1071,8 +641,7 @@ function ChatLayout() {
                         >
                             Powered by KrishiSetu AI
                         </span>
-
-                    </h1>
+                    </motion.h1>
 
                     <p
                         className="
@@ -1085,10 +654,11 @@ function ChatLayout() {
                             leading-relaxed
                         "
                     >
-                        Your intelligent digital farming companion.
-                        Get assistance with crops, diseases, weather,
-                        mandi prices and government schemes — all in
-                        one powerful platform.
+                        Your intelligent digital farming
+                        companion. Get assistance with
+                        crops, diseases, weather, mandi
+                        prices and government schemes —
+                        all in one powerful platform.
                     </p>
 
                     {/* BADGES */}
@@ -1102,7 +672,6 @@ function ChatLayout() {
                             mt-7
                         "
                     >
-
                         {[
                             {
                                 icon: Leaf,
@@ -1117,18 +686,11 @@ function ChatLayout() {
                                 text: "Farmer First",
                             },
                         ].map((item) => {
-
-                            const Icon =
-                                item.icon;
+                            const Icon = item.icon;
 
                             return (
-
-                                <motion.div
+                                <div
                                     key={item.text}
-                                    whileHover={{
-                                        y: -4,
-                                        scale: 1.05,
-                                    }}
                                     className="
                                         flex
                                         items-center
@@ -1137,49 +699,28 @@ function ChatLayout() {
                                         py-2
                                         rounded-full
                                         bg-white/10
-                                        backdrop-blur-xl
                                         border
-                                        border-white/20
+                                        border-white/10
                                         text-green-50
                                         text-xs
                                         font-semibold
                                     "
                                 >
-
                                     <Icon size={15} />
-
                                     {item.text}
-
-                                </motion.div>
-
+                                </div>
                             );
-
                         })}
-
                     </div>
+                </section>
 
-                </motion.section>
+         
 
                 {/* ==================================================
-                    FARMER + AI SECTION
+                    FARMER + AI
                 ================================================== */}
 
-                <motion.section
-                    initial={{
-                        opacity: 0,
-                        y: 40,
-                    }}
-                    whileInView={{
-                        opacity: 1,
-                        y: 0,
-                    }}
-                    viewport={{
-                        once: true,
-                        amount: 0.2,
-                    }}
-                    transition={{
-                        duration: 0.8,
-                    }}
+                <section
                     className="
                         grid
                         grid-cols-1
@@ -1188,19 +729,9 @@ function ChatLayout() {
                         mb-14
                     "
                 >
-
                     {/* FARMER CARD */}
 
-                    <motion.div
-                        whileHover={{
-                            y: -8,
-                            scale: 1.01,
-                        }}
-                        transition={{
-                            type: "spring",
-                            stiffness: 250,
-                            damping: 20,
-                        }}
+                    <div
                         className="
                             relative
                             overflow-hidden
@@ -1212,21 +743,12 @@ function ChatLayout() {
                             p-7
                             md:p-9
                             text-white
-                            shadow-[0_25px_70px_rgba(0,0,0,0.25)]
+                            shadow-xl
                             border
                             border-white/10
                         "
                     >
-
-                        <motion.div
-                            animate={{
-                                x: [0, 50, 0],
-                                y: [0, -30, 0],
-                            }}
-                            transition={{
-                                duration: 8,
-                                repeat: Infinity,
-                            }}
+                        <div
                             className="
                                 absolute
                                 -right-20
@@ -1234,29 +756,9 @@ function ChatLayout() {
                                 w-64
                                 h-64
                                 rounded-full
-                                bg-lime-300/20
+                                bg-lime-300/10
                                 blur-3xl
-                            "
-                        />
-
-                        <motion.div
-                            animate={{
-                                x: [0, -40, 0],
-                                y: [0, 20, 0],
-                            }}
-                            transition={{
-                                duration: 7,
-                                repeat: Infinity,
-                            }}
-                            className="
-                                absolute
-                                -bottom-24
-                                -left-20
-                                w-72
-                                h-72
-                                rounded-full
-                                bg-emerald-300/20
-                                blur-3xl
+                                pointer-events-none
                             "
                         />
 
@@ -1270,19 +772,7 @@ function ChatLayout() {
                                 items-center
                             "
                         >
-
-                            <motion.div
-                                animate={{
-                                    scale: [
-                                        1,
-                                        1.04,
-                                        1,
-                                    ],
-                                }}
-                                transition={{
-                                    duration: 3,
-                                    repeat: Infinity,
-                                }}
+                            <div
                                 className="
                                     flex-shrink-0
                                     w-32
@@ -1296,25 +786,24 @@ function ChatLayout() {
                                     flex
                                     items-center
                                     justify-center
-                                    shadow-2xl
+                                    shadow-xl
                                     overflow-hidden
                                 "
                             >
-
                                 <img
                                     src={farmerImage}
                                     alt="Indian Farmer"
+                                    loading="lazy"
+                                    decoding="async"
                                     className="
                                         w-full
                                         h-full
                                         object-cover
                                     "
                                 />
-
-                            </motion.div>
+                            </div>
 
                             <div>
-
                                 <div
                                     className="
                                         inline-flex
@@ -1330,11 +819,8 @@ function ChatLayout() {
                                         mb-4
                                     "
                                 >
-
                                     <Wheat size={14} />
-
                                     Built for Indian Farmers
-
                                 </div>
 
                                 <h2
@@ -1344,15 +830,11 @@ function ChatLayout() {
                                         font-black
                                     "
                                 >
-
                                     Technology for
-
                                     <br />
-
                                     <span className="text-lime-200">
                                         Every Farmer
                                     </span>
-
                                 </h2>
 
                                 <p
@@ -1363,30 +845,20 @@ function ChatLayout() {
                                         leading-relaxed
                                     "
                                 >
-                                    KrishiSetu AI helps farmers make
-                                    smarter decisions using artificial
-                                    intelligence, agricultural knowledge
+                                    KrishiSetu AI helps
+                                    farmers make smarter
+                                    decisions using
+                                    artificial intelligence,
+                                    agricultural knowledge
                                     and real-time information.
                                 </p>
-
                             </div>
-
                         </div>
-
-                    </motion.div>
+                    </div>
 
                     {/* AI CARD */}
 
-                    <motion.div
-                        whileHover={{
-                            y: -8,
-                            scale: 1.01,
-                        }}
-                        transition={{
-                            type: "spring",
-                            stiffness: 250,
-                            damping: 20,
-                        }}
+                    <div
                         className="
                             relative
                             overflow-hidden
@@ -1397,279 +869,160 @@ function ChatLayout() {
                             to-emerald-100
                             border
                             border-white/60
-                            shadow-[0_25px_70px_rgba(0,0,0,0.18)]
+                            shadow-xl
                             p-7
                             md:p-9
                         "
                     >
-
-                        <motion.div
-                            animate={{
-                                scale: [
-                                    1,
-                                    1.2,
-                                    1,
-                                ],
-                                opacity: [
-                                    0.3,
-                                    0.5,
-                                    0.3,
-                                ],
-                            }}
-                            transition={{
-                                duration: 5,
-                                repeat: Infinity,
-                            }}
+                        <div
                             className="
-                                absolute
-                                -right-20
-                                -top-20
-                                w-60
-                                h-60
-                                rounded-full
-                                bg-green-300/30
-                                blur-3xl
+                                flex
+                                items-center
+                                gap-4
+                                mb-6
                             "
-                        />
-
-                        <div className="relative">
-
+                        >
                             <div
                                 className="
+                                    w-14
+                                    h-14
+                                    rounded-2xl
+                                    bg-gradient-to-br
+                                    from-green-500
+                                    to-emerald-600
+                                    text-white
+                                    shadow-lg
                                     flex
                                     items-center
-                                    gap-4
-                                    mb-6
+                                    justify-center
                                 "
                             >
+                                <Bot size={30} />
+                            </div>
 
-                                <motion.div
-                                    animate={{
-                                        rotate: [
-                                            0,
-                                            8,
-                                            -8,
-                                            0,
-                                        ],
-                                    }}
-                                    transition={{
-                                        duration: 3,
-                                        repeat: Infinity,
-                                    }}
+                            <div>
+                                <h2
                                     className="
-                                        w-14
-                                        h-14
-                                        rounded-2xl
-                                        bg-gradient-to-br
-                                        from-green-500
-                                        to-emerald-600
-                                        text-white
-                                        shadow-lg
-                                        flex
-                                        items-center
-                                        justify-center
+                                        text-2xl
+                                        font-black
+                                        text-gray-800
                                     "
                                 >
+                                    What can KrishiSetu
+                                    AI do?
+                                </h2>
 
-                                    <Bot size={30} />
-
-                                </motion.div>
-
-                                <div>
-
-                                    <h2
-                                        className="
-                                            text-2xl
-                                            font-black
-                                            text-gray-800
-                                        "
-                                    >
-                                        What can KrishiSetu AI do?
-                                    </h2>
-
-                                    <p
-                                        className="
-                                            text-sm
-                                            text-gray-500
-                                        "
-                                    >
-                                        Your smart farming companion
-                                    </p>
-
-                                </div>
-
+                                <p className="text-sm text-gray-500">
+                                    Your smart farming companion
+                                </p>
                             </div>
-
-                            <div
-                                className="
-                                    grid
-                                    grid-cols-2
-                                    gap-3
-                                "
-                            >
-
-                                {[
-                                    {
-                                        icon: Sprout,
-                                        title: "Crop Advice",
-                                        text: "Better crop decisions",
-                                        bg: "bg-green-100",
-                                        color: "text-green-600",
-                                    },
-                                    {
-                                        icon: Bug,
-                                        title: "Disease Help",
-                                        text: "Protect your crops",
-                                        bg: "bg-red-100",
-                                        color: "text-red-500",
-                                    },
-                                    {
-                                        icon: CloudSun,
-                                        title: "Weather",
-                                        text: "Plan farm activities",
-                                        bg: "bg-blue-100",
-                                        color: "text-blue-500",
-                                    },
-                                    {
-                                        icon: ShieldCheck,
-                                        title: "Schemes",
-                                        text: "Find farmer benefits",
-                                        bg: "bg-purple-100",
-                                        color: "text-purple-500",
-                                    },
-                                ].map(
-                                    (
-                                        item,
-                                        index
-                                    ) => {
-
-                                        const Icon =
-                                            item.icon;
-
-                                        return (
-
-                                            <motion.div
-                                                key={
-                                                    item.title
-                                                }
-                                                initial={{
-                                                    opacity: 0,
-                                                    scale: 0.9,
-                                                }}
-                                                whileInView={{
-                                                    opacity: 1,
-                                                    scale: 1,
-                                                }}
-                                                viewport={{
-                                                    once: true,
-                                                }}
-                                                transition={{
-                                                    delay:
-                                                        index *
-                                                        0.1,
-                                                }}
-                                                whileHover={{
-                                                    y: -5,
-                                                    scale: 1.04,
-                                                }}
-                                                className="
-                                                    rounded-2xl
-                                                    bg-white/70
-                                                    backdrop-blur-sm
-                                                    border
-                                                    border-white
-                                                    p-4
-                                                    shadow-sm
-                                                    hover:shadow-lg
-                                                    transition
-                                                "
-                                            >
-
-                                                <div
-                                                    className={`
-                                                        w-10
-                                                        h-10
-                                                        rounded-xl
-                                                        ${item.bg}
-                                                        flex
-                                                        items-center
-                                                        justify-center
-                                                        mb-3
-                                                    `}
-                                                >
-
-                                                    <Icon
-                                                        size={21}
-                                                        className={
-                                                            item.color
-                                                        }
-                                                    />
-
-                                                </div>
-
-                                                <p
-                                                    className="
-                                                        font-bold
-                                                        text-gray-800
-                                                        text-sm
-                                                    "
-                                                >
-                                                    {
-                                                        item.title
-                                                    }
-                                                </p>
-
-                                                <p
-                                                    className="
-                                                        text-xs
-                                                        text-gray-500
-                                                        mt-1
-                                                    "
-                                                >
-                                                    {
-                                                        item.text
-                                                    }
-                                                </p>
-
-                                            </motion.div>
-
-                                        );
-
-                                    }
-                                )}
-
-                            </div>
-
                         </div>
 
-                    </motion.div>
+                        <div
+                            className="
+                                grid
+                                grid-cols-2
+                                gap-3
+                            "
+                        >
+                            {[
+                                {
+                                    icon: Sprout,
+                                    title: "Crop Advice",
+                                    text: "Better crop decisions",
+                                    bg: "bg-green-100",
+                                    color: "text-green-600",
+                                },
+                                {
+                                    icon: Bug,
+                                    title: "Disease Help",
+                                    text: "Protect your crops",
+                                    bg: "bg-red-100",
+                                    color: "text-red-500",
+                                },
+                                {
+                                    icon: CloudSun,
+                                    title: "Weather",
+                                    text: "Plan farm activities",
+                                    bg: "bg-blue-100",
+                                    color: "text-blue-500",
+                                },
+                                {
+                                    icon: ShieldCheck,
+                                    title: "Schemes",
+                                    text: "Find farmer benefits",
+                                    bg: "bg-purple-100",
+                                    color: "text-purple-500",
+                                },
+                            ].map((item) => {
+                                const Icon = item.icon;
 
-                </motion.section>
+                                return (
+                                    <div
+                                        key={item.title}
+                                        className="
+                                            rounded-2xl
+                                            bg-white/70
+                                            border
+                                            border-white
+                                            p-4
+                                            shadow-sm
+                                        "
+                                    >
+                                        <div
+                                            className={`
+                                                w-10
+                                                h-10
+                                                rounded-xl
+                                                ${item.bg}
+                                                flex
+                                                items-center
+                                                justify-center
+                                                mb-3
+                                            `}
+                                        >
+                                            <Icon
+                                                size={21}
+                                                className={
+                                                    item.color
+                                                }
+                                            />
+                                        </div>
 
-                {/* ==================================================
-                    FEATURE SECTION
+                                        <p
+                                            className="
+                                                font-bold
+                                                text-gray-800
+                                                text-sm
+                                            "
+                                        >
+                                            {item.title}
+                                        </p>
+
+                                        <p
+                                            className="
+                                                text-xs
+                                                text-gray-500
+                                                mt-1
+                                            "
+                                        >
+                                            {item.text}
+                                        </p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </section>
+
+
+
+{/* ==================================================
+                    HOW IT WORKS - 2 ANIMATED CARDS
                 ================================================== */}
 
                 <section className="mb-14">
-
-                    <motion.div
-                        initial={{
-                            opacity: 0,
-                            y: 25,
-                        }}
-                        whileInView={{
-                            opacity: 1,
-                            y: 0,
-                        }}
-                        viewport={{
-                            once: true,
-                        }}
-                        className="
-                            text-center
-                            mb-8
-                        "
-                    >
-
+                    <div className="text-center mb-9">
                         <span
                             className="
                                 inline-flex
@@ -1680,18 +1033,581 @@ function ChatLayout() {
                                 rounded-full
                                 bg-white/10
                                 border
-                                border-white/20
+                                border-white/10
+                                text-lime-200
+                                text-xs
+                                font-black
+                                tracking-widest
+                            "
+                        >
+                            <Sparkles size={14} />
+                            HOW IT WORKS
+                        </span>
+
+                        <h2
+                            className="
+                                text-3xl
+                                md:text-4xl
+                                font-black
+                                text-white
+                                mt-4
+                            "
+                        >
+                            Simple. Smart. Powerful.
+                        </h2>
+
+                        <p
+                            className="
+                                text-green-100/70
+                                text-sm
+                                mt-2
+                                max-w-xl
+                                mx-auto
+                            "
+                        >
+                            Get intelligent farming guidance
+                            in just two simple steps.
+                        </p>
+                    </div>
+
+                    <div
+                        className="
+                            relative
+                            grid
+                            grid-cols-1
+                            lg:grid-cols-2
+                            gap-6
+                            items-stretch
+                        "
+                    >
+                        {/* CARD 1 */}
+
+                        <motion.div
+                            initial={
+                                reduceMotion
+                                    ? false
+                                    : {
+                                          opacity: 0,
+                                          x: -50,
+                                      }
+                            }
+                            whileInView={
+                                reduceMotion
+                                    ? {}
+                                    : {
+                                          opacity: 1,
+                                          x: 0,
+                                      }
+                            }
+                            viewport={{
+                                once: true,
+                                amount: 0.25,
+                            }}
+                            transition={{
+                                duration: 0.6,
+                            }}
+                            whileHover={
+                                reduceMotion
+                                    ? {}
+                                    : {
+                                          y: -8,
+                                      }
+                            }
+                            className="
+                                group
+                                relative
+                                overflow-hidden
+                                rounded-[2rem]
+                                bg-gradient-to-br
+                                from-white
+                                via-green-50
+                                to-emerald-100
+                                border
+                                border-white/80
+                                shadow-2xl
+                                p-7
+                                md:p-9
+                            "
+                        >
+                            {/* glow */}
+
+                            <div
+                                className="
+                                    absolute
+                                    -right-16
+                                    -top-16
+                                    w-48
+                                    h-48
+                                    rounded-full
+                                    bg-green-300/20
+                                    blur-3xl
+                                    transition-transform
+                                    duration-500
+                                    group-hover:scale-150
+                                "
+                            />
+
+                            <div className="relative z-10">
+                                <div className="flex items-start justify-between">
+                                    <div
+                                        className="
+                                            w-16
+                                            h-16
+                                            rounded-2xl
+                                            bg-gradient-to-br
+                                            from-green-500
+                                            to-emerald-700
+                                            text-white
+                                            flex
+                                            items-center
+                                            justify-center
+                                            shadow-lg
+                                        "
+                                    >
+                                        <UserRound size={30} />
+                                    </div>
+
+                                    <span
+                                        className="
+                                            text-5xl
+                                            font-black
+                                            text-green-100
+                                        "
+                                    >
+                                        01
+                                    </span>
+                                </div>
+
+                                <span
+                                    className="
+                                        inline-block
+                                        mt-7
+                                        text-[10px]
+                                        font-black
+                                        uppercase
+                                        tracking-[0.2em]
+                                        text-green-600
+                                    "
+                                >
+                                    Step One
+                                </span>
+
+                                <h3
+                                    className="
+                                        text-2xl
+                                        md:text-3xl
+                                        font-black
+                                        text-gray-800
+                                        mt-2
+                                    "
+                                >
+                                    Tell Us About
+                                    <br />
+                                    <span className="text-green-600">
+                                        Your Farm
+                                    </span>
+                                </h3>
+
+                                <p
+                                    className="
+                                        mt-4
+                                        text-sm
+                                        md:text-base
+                                        leading-7
+                                        text-gray-600
+                                        max-w-lg
+                                    "
+                                >
+                                    Ask KrishiSetu AI about
+                                    your crop, soil, weather,
+                                    disease, mandi prices or
+                                    government schemes.
+                                </p>
+
+                                <div
+                                    className="
+                                        mt-6
+                                        flex
+                                        flex-wrap
+                                        gap-2
+                                    "
+                                >
+                                    {[
+                                        "Crop",
+                                        "Soil",
+                                        "Weather",
+                                        "Disease",
+                                    ].map((item) => (
+                                        <span
+                                            key={item}
+                                            className="
+                                                px-3
+                                                py-1.5
+                                                rounded-full
+                                                bg-green-100
+                                                text-green-700
+                                                text-xs
+                                                font-bold
+                                            "
+                                        >
+                                            {item}
+                                        </span>
+                                    ))}
+                                </div>
+
+                                <div
+                                    className="
+                                        mt-7
+                                        flex
+                                        items-center
+                                        gap-2
+                                        text-green-700
+                                        font-black
+                                        text-sm
+                                    "
+                                >
+                                    <MessageCircle size={18} />
+                                    Ask your question
+                                </div>
+                            </div>
+                        </motion.div>
+
+                        {/* CENTER CONNECTOR */}
+
+                        <div
+                            className="
+                                hidden
+                                lg:flex
+                                absolute
+                                left-1/2
+                                top-1/2
+                                -translate-x-1/2
+                                -translate-y-1/2
+                                z-20
+                                items-center
+                                justify-center
+                            "
+                        >
+                            <motion.div
+                                animate={
+                                    reduceMotion
+                                        ? {}
+                                        : {
+                                              x: [0, 8, 0],
+                                          }
+                                }
+                                transition={{
+                                    duration: 1.5,
+                                    repeat: Infinity,
+                                    ease: "easeInOut",
+                                }}
+                                className="
+                                    w-14
+                                    h-14
+                                    rounded-full
+                                    bg-white
+                                    border-4
+                                    border-green-100
+                                    shadow-xl
+                                    flex
+                                    items-center
+                                    justify-center
+                                    text-green-600
+                                "
+                            >
+                                <ArrowRight size={25} />
+                            </motion.div>
+                        </div>
+
+                        {/* MOBILE CONNECTOR */}
+
+                        <div
+                            className="
+                                flex
+                                lg:hidden
+                                justify-center
+                                -my-2
+                                relative
+                                z-20
+                            "
+                        >
+                            <motion.div
+                                animate={
+                                    reduceMotion
+                                        ? {}
+                                        : {
+                                              y: [0, 6, 0],
+                                          }
+                                }
+                                transition={{
+                                    duration: 1.5,
+                                    repeat: Infinity,
+                                }}
+                                className="
+                                    w-12
+                                    h-12
+                                    rounded-full
+                                    bg-white
+                                    border-4
+                                    border-green-100
+                                    shadow-xl
+                                    flex
+                                    items-center
+                                    justify-center
+                                    text-green-600
+                                "
+                            >
+                                <ArrowRight
+                                    size={23}
+                                    className="rotate-90"
+                                />
+                            </motion.div>
+                        </div>
+
+                        {/* CARD 2 */}
+
+                        <motion.div
+                            initial={
+                                reduceMotion
+                                    ? false
+                                    : {
+                                          opacity: 0,
+                                          x: 50,
+                                      }
+                            }
+                            whileInView={
+                                reduceMotion
+                                    ? {}
+                                    : {
+                                          opacity: 1,
+                                          x: 0,
+                                      }
+                            }
+                            viewport={{
+                                once: true,
+                                amount: 0.25,
+                            }}
+                            transition={{
+                                duration: 0.6,
+                                delay: 0.15,
+                            }}
+                            whileHover={
+                                reduceMotion
+                                    ? {}
+                                    : {
+                                          y: -8,
+                                      }
+                            }
+                            className="
+                                group
+                                relative
+                                overflow-hidden
+                                rounded-[2rem]
+                                bg-gradient-to-br
+                                from-emerald-950
+                                via-green-800
+                                to-emerald-500
+                                border
+                                border-white/10
+                                shadow-2xl
+                                p-7
+                                md:p-9
+                                text-white
+                            "
+                        >
+                            {/* glow */}
+
+                            <div
+                                className="
+                                    absolute
+                                    -right-16
+                                    -top-16
+                                    w-56
+                                    h-56
+                                    rounded-full
+                                    bg-lime-300/10
+                                    blur-3xl
+                                    transition-transform
+                                    duration-500
+                                    group-hover:scale-150
+                                "
+                            />
+
+                            <div className="relative z-10">
+                                <div className="flex items-start justify-between">
+                                    <div
+                                        className="
+                                            w-16
+                                            h-16
+                                            rounded-2xl
+                                            bg-white/15
+                                            border
+                                            border-white/20
+                                            text-lime-200
+                                            flex
+                                            items-center
+                                            justify-center
+                                            shadow-lg
+                                        "
+                                    >
+                                        <Brain size={30} />
+                                    </div>
+
+                                    <span
+                                        className="
+                                            text-5xl
+                                            font-black
+                                            text-white/10
+                                        "
+                                    >
+                                        02
+                                    </span>
+                                </div>
+
+                                <span
+                                    className="
+                                        inline-block
+                                        mt-7
+                                        text-[10px]
+                                        font-black
+                                        uppercase
+                                        tracking-[0.2em]
+                                        text-lime-300
+                                    "
+                                >
+                                    Step Two
+                                </span>
+
+                                <h3
+                                    className="
+                                        text-2xl
+                                        md:text-3xl
+                                        font-black
+                                        mt-2
+                                    "
+                                >
+                                    Get Smart
+                                    <br />
+                                    <span className="text-lime-300">
+                                        AI Insights
+                                    </span>
+                                </h3>
+
+                                <p
+                                    className="
+                                        mt-4
+                                        text-sm
+                                        md:text-base
+                                        leading-7
+                                        text-green-50/75
+                                        max-w-lg
+                                    "
+                                >
+                                    KrishiSetu AI analyzes
+                                    your question and provides
+                                    practical, easy-to-understand
+                                    farming guidance.
+                                </p>
+
+                                <div
+                                    className="
+                                        mt-6
+                                        grid
+                                        grid-cols-2
+                                        gap-3
+                                    "
+                                >
+                                    {[
+                                        {
+                                            icon: Sprout,
+                                            text: "Crop Advice",
+                                        },
+                                        {
+                                            icon: Bug,
+                                            text: "Disease Help",
+                                        },
+                                        {
+                                            icon: CloudSun,
+                                            text: "Weather",
+                                        },
+                                        {
+                                            icon: ShieldCheck,
+                                            text: "Schemes",
+                                        },
+                                    ].map((item) => {
+                                        const Icon =
+                                            item.icon;
+
+                                        return (
+                                            <div
+                                                key={item.text}
+                                                className="
+                                                    flex
+                                                    items-center
+                                                    gap-2
+                                                    rounded-xl
+                                                    bg-white/10
+                                                    border
+                                                    border-white/10
+                                                    px-3
+                                                    py-2.5
+                                                    text-xs
+                                                    font-semibold
+                                                "
+                                            >
+                                                <Icon
+                                                    size={16}
+                                                    className="text-lime-300"
+                                                />
+                                                {item.text}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                <div
+                                    className="
+                                        mt-7
+                                        flex
+                                        items-center
+                                        gap-2
+                                        text-lime-300
+                                        font-black
+                                        text-sm
+                                    "
+                                >
+                                    <Sparkles size={18} />
+                                    Make better decisions
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                </section>
+                {/* ==================================================
+                    FEATURES
+                ================================================== */}
+
+                <section className="mb-14">
+                    <div className="text-center mb-8">
+                        <span
+                            className="
+                                inline-flex
+                                items-center
+                                gap-2
+                                px-4
+                                py-2
+                                rounded-full
+                                bg-white/10
+                                border
+                                border-white/10
                                 text-lime-200
                                 text-xs
                                 font-bold
                                 tracking-widest
                             "
                         >
-
                             <Sparkles size={14} />
-
                             SMART FARMING TOOLS
-
                         </span>
 
                         <h2
@@ -1715,8 +1631,7 @@ function ChatLayout() {
                         >
                             Powerful AI tools designed for modern farmers
                         </p>
-
-                    </motion.div>
+                    </div>
 
                     <div
                         className="
@@ -1727,765 +1642,150 @@ function ChatLayout() {
                             gap-5
                         "
                     >
+                        {FEATURES.map((feature, index) => {
+                            const Icon = feature.icon;
 
-                        {features.map(
-                            (
-                                feature,
-                                index
-                            ) => {
-
-                                const Icon =
-                                    feature.icon;
-
-                                return (
-
-                                    <motion.button
-                                        key={
-                                            feature.title
-                                        }
-                                        type="button"
-                                        variants={
-                                            cardVariants
-                                        }
-                                        initial="hidden"
-                                        whileInView="visible"
-                                        viewport={{
-                                            once: true,
-                                            amount: 0.2,
-                                        }}
-                                        transition={{
-                                            duration: 0.6,
-                                            delay:
-                                                index *
-                                                0.1,
-                                        }}
-                                        whileHover={{
-                                            y: -12,
-                                            scale: 1.03,
-                                        }}
-                                        whileTap={{
-                                            scale: 0.97,
-                                        }}
-                                        onClick={() =>
-                                            handleQuickQuestion(
-                                                feature.question
-                                            )
-                                        }
-                                        className={`
-                                            group
-                                            relative
-                                            overflow-hidden
-                                            text-left
-                                            rounded-[2rem]
-                                            bg-gradient-to-br
-                                            ${feature.gradient}
-                                            border
-                                            ${feature.border}
-                                            p-6
-                                            shadow-[0_15px_40px_rgba(0,0,0,0.15)]
-                                            hover:shadow-[0_25px_60px_rgba(0,0,0,0.25)]
-                                            transition-shadow
-                                        `}
-                                    >
-
-                                        <motion.div
-                                            animate={{
-                                                x: [
-                                                    -20,
-                                                    30,
-                                                    -20,
-                                                ],
-                                                y: [
-                                                    20,
-                                                    -20,
-                                                    20,
-                                                ],
-                                            }}
-                                            transition={{
-                                                duration:
-                                                    6 +
-                                                    index,
-                                                repeat:
-                                                    Infinity,
-                                                ease:
-                                                    "easeInOut",
-                                            }}
+                            return (
+                                <motion.button
+                                    key={feature.title}
+                                    type="button"
+                                    onClick={() =>
+                                        handleQuickQuestion(
+                                            feature.question
+                                        )
+                                    }
+                                    initial={
+                                        reduceMotion
+                                            ? false
+                                            : {
+                                                  opacity: 0,
+                                                  y: 25,
+                                              }
+                                    }
+                                    whileInView={
+                                        reduceMotion
+                                            ? {}
+                                            : {
+                                                  opacity: 1,
+                                                  y: 0,
+                                              }
+                                    }
+                                    viewport={{
+                                        once: true,
+                                        amount: 0.15,
+                                    }}
+                                    transition={{
+                                        duration: 0.45,
+                                        delay: index * 0.08,
+                                    }}
+                                    whileHover={
+                                        reduceMotion
+                                            ? {}
+                                            : {
+                                                  y: -6,
+                                              }
+                                    }
+                                    className={`
+                                        group
+                                        relative
+                                        overflow-hidden
+                                        text-left
+                                        rounded-[2rem]
+                                        bg-gradient-to-br
+                                        ${feature.gradient}
+                                        border
+                                        ${feature.border}
+                                        p-6
+                                        shadow-lg
+                                        transition-shadow
+                                        duration-200
+                                        hover:shadow-2xl
+                                        active:scale-[0.98]
+                                    `}
+                                >
+                                    <div className="relative z-10">
+                                        <div
                                             className={`
-                                                absolute
-                                                -right-16
-                                                -top-16
-                                                w-40
-                                                h-40
-                                                rounded-full
-                                                ${feature.glow}
-                                                blur-3xl
+                                                w-14
+                                                h-14
+                                                rounded-2xl
+                                                ${feature.iconBg}
+                                                ${feature.iconColor}
+                                                flex
+                                                items-center
+                                                justify-center
+                                                mb-5
+                                                transition-transform
+                                                duration-300
+                                                group-hover:scale-110
                                             `}
-                                        />
-
-                                        <motion.div
-                                            initial={{
-                                                x: "-120%",
-                                            }}
-                                            whileHover={{
-                                                x: "120%",
-                                            }}
-                                            transition={{
-                                                duration: 0.8,
-                                            }}
-                                            className="
-                                                absolute
-                                                top-0
-                                                bottom-0
-                                                w-20
-                                                bg-white/40
-                                                blur-xl
-                                                -skew-x-12
-                                            "
-                                        />
-
-                                        <div className="relative z-10">
-
-                                            <motion.div
-                                                whileHover={{
-                                                    rotate: 8,
-                                                    scale: 1.12,
-                                                }}
-                                                className={`
-                                                    w-14
-                                                    h-14
-                                                    rounded-2xl
-                                                    ${feature.iconBg}
-                                                    ${feature.iconColor}
-                                                    flex
-                                                    items-center
-                                                    justify-center
-                                                    mb-5
-                                                    shadow-sm
-                                                `}
-                                            >
-
-                                                <Icon
-                                                    size={28}
-                                                />
-
-                                            </motion.div>
-
-                                            <span
-                                                className="
-                                                    text-[10px]
-                                                    font-black
-                                                    uppercase
-                                                    tracking-[0.18em]
-                                                    text-gray-500
-                                                "
-                                            >
-                                                AI POWERED
-                                            </span>
-
-                                            <h3
-                                                className="
-                                                    text-lg
-                                                    font-black
-                                                    text-gray-800
-                                                    mt-2
-                                                "
-                                            >
-                                                {
-                                                    feature.title
-                                                }
-                                            </h3>
-
-                                            <p
-                                                className="
-                                                    text-sm
-                                                    text-gray-600
-                                                    mt-2
-                                                    leading-relaxed
-                                                "
-                                            >
-                                                {
-                                                    feature.description
-                                                }
-                                            </p>
-
-                                            <div
-                                                className="
-                                                    flex
-                                                    items-center
-                                                    gap-2
-                                                    mt-5
-                                                    text-green-700
-                                                    text-sm
-                                                    font-black
-                                                "
-                                            >
-
-                                                Ask AI
-
-                                                <motion.span
-                                                    animate={{
-                                                        x: [
-                                                            0,
-                                                            5,
-                                                            0,
-                                                        ],
-                                                    }}
-                                                    transition={{
-                                                        duration:
-                                                            1.5,
-                                                        repeat:
-                                                            Infinity,
-                                                    }}
-                                                >
-
-                                                    <ArrowRight
-                                                        size={16}
-                                                    />
-
-                                                </motion.span>
-
-                                            </div>
-
+                                        >
+                                            <Icon size={28} />
                                         </div>
 
-                                    </motion.button>
+                                        <span
+                                            className="
+                                                text-[10px]
+                                                font-black
+                                                uppercase
+                                                tracking-[0.18em]
+                                                text-gray-500
+                                            "
+                                        >
+                                            AI POWERED
+                                        </span>
 
-                                );
+                                        <h3
+                                            className="
+                                                text-lg
+                                                font-black
+                                                text-gray-800
+                                                mt-2
+                                            "
+                                        >
+                                            {feature.title}
+                                        </h3>
 
-                            }
-                        )}
+                                        <p
+                                            className="
+                                                text-sm
+                                                text-gray-600
+                                                mt-2
+                                                leading-relaxed
+                                            "
+                                        >
+                                            {feature.description}
+                                        </p>
 
+                                        <div
+                                            className="
+                                                flex
+                                                items-center
+                                                gap-2
+                                                mt-5
+                                                text-green-700
+                                                text-sm
+                                                font-black
+                                            "
+                                        >
+                                            Ask AI
+                                            <ArrowRight
+                                                size={16}
+                                                className="
+                                                    transition-transform
+                                                    duration-300
+                                                    group-hover:translate-x-1
+                                                "
+                                            />
+                                        </div>
+                                    </div>
+                                </motion.button>
+                            );
+                        })}
                     </div>
-
                 </section>
 
-                {/* ==================================================
-                    SMART FARMING INTELLIGENCE
-                ================================================== */}
-
-                <motion.section
-                    initial={{
-                        opacity: 0,
-                        y: 40,
-                    }}
-                    whileInView={{
-                        opacity: 1,
-                        y: 0,
-                    }}
-                    viewport={{
-                        once: true,
-                        amount: 0.2,
-                    }}
-                    transition={{
-                        duration: 0.8,
-                    }}
-                    className="
-                        relative
-                        overflow-hidden
-                        rounded-[2.5rem]
-                        bg-gradient-to-br
-                        from-white
-                        via-green-50
-                        to-emerald-100
-                        border
-                        border-white
-                        shadow-[0_25px_80px_rgba(0,0,0,0.18)]
-                        p-6
-                        md:p-10
-                        mb-10
-                    "
-                >
-
-                    <motion.div
-                        animate={{
-                            x: [0, 60, 0],
-                            y: [0, -40, 0],
-                        }}
-                        transition={{
-                            duration: 9,
-                            repeat: Infinity,
-                        }}
-                        className="
-                            absolute
-                            -top-32
-                            -right-32
-                            w-80
-                            h-80
-                            rounded-full
-                            bg-green-300/30
-                            blur-3xl
-                        "
-                    />
-
-                    <motion.div
-                        animate={{
-                            x: [0, -50, 0],
-                            y: [0, 30, 0],
-                        }}
-                        transition={{
-                            duration: 8,
-                            repeat: Infinity,
-                        }}
-                        className="
-                            absolute
-                            -bottom-32
-                            -left-32
-                            w-80
-                            h-80
-                            rounded-full
-                            bg-emerald-300/30
-                            blur-3xl
-                        "
-                    />
-
-                    <div className="relative">
-
-                        <div className="text-center mb-8">
-
-                            <div
-                                className="
-                                    inline-flex
-                                    items-center
-                                    gap-2
-                                    px-4
-                                    py-2
-                                    rounded-full
-                                    bg-green-100
-                                    border
-                                    border-green-200
-                                    text-green-700
-                                    text-xs
-                                    font-black
-                                    tracking-wider
-                                "
-                            >
-
-                                <Sparkles size={14} />
-
-                                KRISHISETU INTELLIGENCE
-
-                            </div>
-
-                            <h2
-                                className="
-                                    text-3xl
-                                    md:text-4xl
-                                    font-black
-                                    text-gray-800
-                                    mt-4
-                                "
-                            >
-
-                                Smarter Decisions.
-
-                                <span
-                                    className="
-                                        ml-2
-                                        bg-gradient-to-r
-                                        from-green-600
-                                        to-emerald-500
-                                        bg-clip-text
-                                        text-transparent
-                                    "
-                                >
-                                    Better Farming.
-                                </span>
-
-                            </h2>
-
-                            <p
-                                className="
-                                    text-sm
-                                    text-gray-500
-                                    mt-3
-                                    max-w-2xl
-                                    mx-auto
-                                "
-                            >
-                                Everything you need to make confident
-                                farming decisions with KrishiSetu AI.
-                            </p>
-
-                        </div>
-
-                        <div
-                            className="
-                                grid
-                                grid-cols-1
-                                sm:grid-cols-2
-                                lg:grid-cols-4
-                                gap-5
-                            "
-                        >
-
-                            {/* CROP */}
-
-                            <motion.div
-                                whileHover={{
-                                    y: -10,
-                                    scale: 1.03,
-                                }}
-                                className="
-                                    group
-                                    relative
-                                    overflow-hidden
-                                    rounded-3xl
-                                    border
-                                    border-green-200
-                                    bg-gradient-to-br
-                                    from-green-100
-                                    via-white
-                                    to-lime-50
-                                    p-6
-                                    shadow-md
-                                    hover:shadow-xl
-                                "
-                            >
-
-                                <motion.div
-                                    animate={{
-                                        rotate: [
-                                            0,
-                                            8,
-                                            -8,
-                                            0,
-                                        ],
-                                    }}
-                                    transition={{
-                                        duration: 4,
-                                        repeat: Infinity,
-                                    }}
-                                    className="
-                                        w-14
-                                        h-14
-                                        rounded-2xl
-                                        bg-green-200
-                                        text-green-700
-                                        flex
-                                        items-center
-                                        justify-center
-                                        mb-5
-                                    "
-                                >
-
-                                    <Sprout size={28} />
-
-                                </motion.div>
-
-                                <span
-                                    className="
-                                        text-[10px]
-                                        font-black
-                                        uppercase
-                                        tracking-widest
-                                        text-green-600
-                                    "
-                                >
-                                    AI Insight
-                                </span>
-
-                                <h3
-                                    className="
-                                        text-xl
-                                        font-black
-                                        text-gray-800
-                                        mt-2
-                                    "
-                                >
-                                    Crop Intelligence
-                                </h3>
-
-                                <p
-                                    className="
-                                        text-sm
-                                        text-gray-500
-                                        mt-2
-                                        leading-relaxed
-                                    "
-                                >
-                                    Discover smarter crop choices based
-                                    on your farming conditions.
-                                </p>
-
-                            </motion.div>
-
-                            {/* WEATHER */}
-
-                            <motion.div
-                                whileHover={{
-                                    y: -10,
-                                    scale: 1.03,
-                                }}
-                                className="
-                                    group
-                                    relative
-                                    overflow-hidden
-                                    rounded-3xl
-                                    border
-                                    border-blue-200
-                                    bg-gradient-to-br
-                                    from-blue-100
-                                    via-white
-                                    to-cyan-50
-                                    p-6
-                                    shadow-md
-                                    hover:shadow-xl
-                                "
-                            >
-
-                                <motion.div
-                                    animate={{
-                                        y: [
-                                            0,
-                                            -6,
-                                            0,
-                                        ],
-                                    }}
-                                    transition={{
-                                        duration: 2.5,
-                                        repeat: Infinity,
-                                    }}
-                                    className="
-                                        w-14
-                                        h-14
-                                        rounded-2xl
-                                        bg-blue-200
-                                        text-blue-700
-                                        flex
-                                        items-center
-                                        justify-center
-                                        mb-5
-                                    "
-                                >
-
-                                    <CloudSun size={28} />
-
-                                </motion.div>
-
-                                <span
-                                    className="
-                                        text-[10px]
-                                        font-black
-                                        uppercase
-                                        tracking-widest
-                                        text-blue-600
-                                    "
-                                >
-                                    Live Guidance
-                                </span>
-
-                                <h3
-                                    className="
-                                        text-xl
-                                        font-black
-                                        text-gray-800
-                                        mt-2
-                                    "
-                                >
-                                    Weather Intelligence
-                                </h3>
-
-                                <p
-                                    className="
-                                        text-sm
-                                        text-gray-500
-                                        mt-2
-                                        leading-relaxed
-                                    "
-                                >
-                                    Plan irrigation, spraying and field
-                                    work around changing weather.
-                                </p>
-
-                            </motion.div>
-
-                            {/* RESOURCE */}
-
-                            <motion.div
-                                whileHover={{
-                                    y: -10,
-                                    scale: 1.03,
-                                }}
-                                className="
-                                    group
-                                    relative
-                                    overflow-hidden
-                                    rounded-3xl
-                                    border
-                                    border-cyan-200
-                                    bg-gradient-to-br
-                                    from-cyan-100
-                                    via-white
-                                    to-teal-50
-                                    p-6
-                                    shadow-md
-                                    hover:shadow-xl
-                                "
-                            >
-
-                                <motion.div
-                                    animate={{
-                                        scale: [
-                                            1,
-                                            1.1,
-                                            1,
-                                        ],
-                                    }}
-                                    transition={{
-                                        duration: 3,
-                                        repeat: Infinity,
-                                    }}
-                                    className="
-                                        w-14
-                                        h-14
-                                        rounded-2xl
-                                        bg-cyan-200
-                                        text-cyan-700
-                                        flex
-                                        items-center
-                                        justify-center
-                                        mb-5
-                                    "
-                                >
-
-                                    <Droplets size={28} />
-
-                                </motion.div>
-
-                                <span
-                                    className="
-                                        text-[10px]
-                                        font-black
-                                        uppercase
-                                        tracking-widest
-                                        text-cyan-600
-                                    "
-                                >
-                                    Smart Farming
-                                </span>
-
-                                <h3
-                                    className="
-                                        text-xl
-                                        font-black
-                                        text-gray-800
-                                        mt-2
-                                    "
-                                >
-                                    Resource Efficiency
-                                </h3>
-
-                                <p
-                                    className="
-                                        text-sm
-                                        text-gray-500
-                                        mt-2
-                                        leading-relaxed
-                                    "
-                                >
-                                    Use water and farm resources more
-                                    efficiently with AI guidance.
-                                </p>
-
-                            </motion.div>
-
-                            {/* MODERN FARMING */}
-
-                            <motion.div
-                                whileHover={{
-                                    y: -10,
-                                    scale: 1.03,
-                                }}
-                                className="
-                                    group
-                                    relative
-                                    overflow-hidden
-                                    rounded-3xl
-                                    border
-                                    border-orange-200
-                                    bg-gradient-to-br
-                                    from-orange-100
-                                    via-white
-                                    to-amber-50
-                                    p-6
-                                    shadow-md
-                                    hover:shadow-xl
-                                "
-                            >
-
-                                <motion.div
-                                    animate={{
-                                        rotate: [
-                                            0,
-                                            -6,
-                                            6,
-                                            0,
-                                        ],
-                                    }}
-                                    transition={{
-                                        duration: 3,
-                                        repeat: Infinity,
-                                    }}
-                                    className="
-                                        w-14
-                                        h-14
-                                        rounded-2xl
-                                        bg-orange-200
-                                        text-orange-700
-                                        flex
-                                        items-center
-                                        justify-center
-                                        mb-5
-                                    "
-                                >
-
-                                    <Tractor size={28} />
-
-                                </motion.div>
-
-                                <span
-                                    className="
-                                        text-[10px]
-                                        font-black
-                                        uppercase
-                                        tracking-widest
-                                        text-orange-600
-                                    "
-                                >
-                                    Farm Support
-                                </span>
-
-                                <h3
-                                    className="
-                                        text-xl
-                                        font-black
-                                        text-gray-800
-                                        mt-2
-                                    "
-                                >
-                                    Modern Farming
-                                </h3>
-
-                                <p
-                                    className="
-                                        text-sm
-                                        text-gray-500
-                                        mt-2
-                                        leading-relaxed
-                                    "
-                                >
-                                    Bring modern technology and practical
-                                    farming knowledge together.
-                                </p>
-
-                            </motion.div>
-
-                        </div>
-
-                    </div>
-
-                </motion.section>
-
+              
             </div>
 
             {/* ==================================================
@@ -2502,102 +1802,49 @@ function ChatLayout() {
                     md:right-7
                 "
             >
-
-                <AnimatePresence>
-
-                    {!chatOpen && (
-
-                        <motion.div
-                            initial={{
-                                opacity: 0,
-                                x: 15,
-                                scale: 0.8,
-                            }}
-                            animate={{
-                                opacity: 1,
-                                x: 0,
-                                scale: 1,
-                            }}
-                            exit={{
-                                opacity: 0,
-                                x: 15,
-                                scale: 0.8,
-                            }}
-                            className="
-                                absolute
-                                right-16
-                                md:right-20
-                                bottom-2
-                            "
-                        >
-
-                            <div
-                                className="
-                                    relative
-                                    bg-white
-                                    px-4
-                                    py-2.5
-                                    rounded-2xl
-                                    shadow-xl
-                                    border
-                                    border-green-100
-                                    text-green-700
-                                    text-xs
-                                    font-bold
-                                    whitespace-nowrap
-                                "
-                            >
-                                Ask KrishiSetu AI 🤖
-                            </div>
-
-                        </motion.div>
-
-                    )}
-
-                </AnimatePresence>
-
                 {!chatOpen && (
-
-                    <motion.div
-                        animate={{
-                            scale: [
-                                1,
-                                1.45,
-                                1,
-                            ],
-                            opacity: [
-                                0.5,
-                                0,
-                                0.5,
-                            ],
-                        }}
-                        transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                        }}
+                    <div
                         className="
                             absolute
-                            inset-0
-                            rounded-full
-                            bg-green-400
+                            right-16
+                            md:right-20
+                            bottom-2
+                            bg-white
+                            px-4
+                            py-2.5
+                            rounded-2xl
+                            shadow-lg
+                            border
+                            border-green-100
+                            text-green-700
+                            text-xs
+                            font-bold
+                            whitespace-nowrap
                         "
-                    />
-
+                    >
+                        Ask KrishiSetu AI 🤖
+                    </div>
                 )}
 
                 <motion.button
                     type="button"
                     onClick={() =>
-                        setChatOpen(
-                            !chatOpen
-                        )
+                        setChatOpen((prev) => !prev)
                     }
-                    whileHover={{
-                        scale: 1.1,
-                    }}
-                    whileTap={{
-                        scale: 0.9,
-                    }}
+                    whileHover={
+                        reduceMotion
+                            ? {}
+                            : {
+                                  scale: 1.05,
+                              }
+                    }
+                    whileTap={
+                        reduceMotion
+                            ? {}
+                            : {
+                                  scale: 0.95,
+                              }
+                    }
                     className="
                         relative
                         w-14
@@ -2610,65 +1857,25 @@ function ChatLayout() {
                         via-emerald-600
                         to-green-400
                         text-white
-                        shadow-2xl
+                        shadow-xl
                         flex
                         items-center
                         justify-center
                         border-4
                         border-white
                     "
+                    aria-label={
+                        chatOpen
+                            ? "Close chat"
+                            : "Open chat"
+                    }
                 >
-
-                    <AnimatePresence mode="wait">
-
-                        {chatOpen ? (
-
-                            <motion.div
-                                key="close"
-                                initial={{
-                                    rotate: -90,
-                                    opacity: 0,
-                                }}
-                                animate={{
-                                    rotate: 0,
-                                    opacity: 1,
-                                }}
-                                exit={{
-                                    rotate: 90,
-                                    opacity: 0,
-                                }}
-                            >
-
-                                <X size={27} />
-
-                            </motion.div>
-
-                        ) : (
-
-                            <motion.div
-                                key="chat"
-                                initial={{
-                                    scale: 0,
-                                    opacity: 0,
-                                }}
-                                animate={{
-                                    scale: 1,
-                                    opacity: 1,
-                                }}
-                            >
-
-                                <MessageCircle
-                                    size={27}
-                                />
-
-                            </motion.div>
-
-                        )}
-
-                    </AnimatePresence>
-
+                    {chatOpen ? (
+                        <X size={27} />
+                    ) : (
+                        <MessageCircle size={27} />
+                    )}
                 </motion.button>
-
             </div>
 
             {/* ==================================================
@@ -2676,28 +1883,13 @@ function ChatLayout() {
             ================================================== */}
 
             <AnimatePresence>
-
                 {chatOpen && (
-
                     <motion.div
-                        initial={{
-                            opacity: 0,
-                            scale: 0.92,
-                            y: 20,
-                        }}
-                        animate={{
-                            opacity: 1,
-                            scale: 1,
-                            y: 0,
-                        }}
-                        exit={{
-                            opacity: 0,
-                            scale: 0.92,
-                            y: 20,
-                        }}
+                        {...chatAnimation}
                         transition={{
-                            duration: 0.25,
-                            ease: "easeOut",
+                            duration: reduceMotion
+                                ? 0
+                                : 0.18,
                         }}
                         className="
                             fixed
@@ -2706,13 +1898,13 @@ function ChatLayout() {
                             left-1/2
                             -translate-x-1/2
                             -translate-y-1/2
-                            w-[calc(100vw-24px)]
+                            w-[calc(100vw-20px)]
                             max-w-[420px]
-                            h-[min(650px,calc(100vh-100px))]
-                            min-h-[480px]
+                            h-[min(650px,calc(100vh-80px))]
+                            min-h-[440px]
                             bg-white
                             rounded-3xl
-                            shadow-[0_25px_80px_rgba(0,0,0,0.30)]
+                            shadow-2xl
                             border
                             border-green-100
                             overflow-hidden
@@ -2720,10 +1912,7 @@ function ChatLayout() {
                             flex-col
                         "
                     >
-
-                        {/* ==================================================
-                            HEADER
-                        ================================================== */}
+                        {/* HEADER */}
 
                         <div
                             className="
@@ -2740,7 +1929,6 @@ function ChatLayout() {
                                 justify-between
                             "
                         >
-
                             <div
                                 className="
                                     flex
@@ -2748,19 +1936,7 @@ function ChatLayout() {
                                     gap-3
                                 "
                             >
-
-                                <motion.div
-                                    animate={{
-                                        y: [
-                                            0,
-                                            -3,
-                                            0,
-                                        ],
-                                    }}
-                                    transition={{
-                                        duration: 2,
-                                        repeat: Infinity,
-                                    }}
+                                <div
                                     className="
                                         w-11
                                         h-11
@@ -2771,13 +1947,10 @@ function ChatLayout() {
                                         justify-center
                                     "
                                 >
-
                                     <Leaf size={25} />
-
-                                </motion.div>
+                                </div>
 
                                 <div>
-
                                     <h2
                                         className="
                                             font-bold
@@ -2796,7 +1969,6 @@ function ChatLayout() {
                                             text-green-100
                                         "
                                     >
-
                                         <span
                                             className="
                                                 w-2
@@ -2807,11 +1979,8 @@ function ChatLayout() {
                                         />
 
                                         Online • Ready to help
-
                                     </div>
-
                                 </div>
-
                             </div>
 
                             <button
@@ -2825,89 +1994,49 @@ function ChatLayout() {
                                     rounded-xl
                                     bg-white/15
                                     hover:bg-white/25
-                                    transition
                                     flex
                                     items-center
                                     justify-center
                                 "
+                                aria-label="Close chat"
                             >
-
                                 <X size={20} />
-
                             </button>
-
                         </div>
 
-                        {/* ==================================================
-                            MESSAGES
-                        ================================================== */}
+                        {/* MESSAGES */}
 
                         <div
                             className="
                                 flex-1
                                 min-h-0
                                 overflow-y-auto
+                                overscroll-contain
                                 p-3
                                 md:p-4
                                 space-y-3
                                 bg-gradient-to-b
                                 from-gray-50
                                 to-green-50/40
-                                scrollbar-thin
                             "
                         >
-
                             {messages.map(
-                                (
-                                    msg,
-                                    index
-                                ) => (
-
-                                    <motion.div
-                                        key={index}
-                                        initial={{
-                                            opacity: 0,
-                                            y: 12,
-                                        }}
-                                        animate={{
-                                            opacity: 1,
-                                            y: 0,
-                                        }}
+                                (msg, index) => (
+                                    <div
+                                        key={`${msg.role}-${index}`}
                                     >
-
                                         <MessageBubble
-                                            role={
-                                                msg.role
-                                            }
-                                            text={
-                                                msg.text
-                                            }
+                                            role={msg.role}
+                                            text={msg.text}
                                         />
-
-                                    </motion.div>
-
+                                    </div>
                                 )
                             )}
 
-                            {/* ==================================================
-                                VOICE PROCESSING INDICATOR
-                            ================================================== */}
+                            {/* VOICE PROCESSING */}
 
                             {voiceProcessing && (
-
-                                <motion.div
-                                    initial={{
-                                        opacity: 0,
-                                        y: 8,
-                                    }}
-                                    animate={{
-                                        opacity: 1,
-                                        y: 0,
-                                    }}
-                                    exit={{
-                                        opacity: 0,
-                                        y: 8,
-                                    }}
+                                <div
                                     className="
                                         flex
                                         items-center
@@ -2922,57 +2051,21 @@ function ChatLayout() {
                                         w-fit
                                     "
                                 >
-
-                                    {/* ROTATING CIRCLE */}
-
                                     <div
                                         className="
-                                            relative
                                             w-9
                                             h-9
                                             flex
                                             items-center
                                             justify-center
+                                            rounded-full
+                                            border-[3px]
+                                            border-green-100
+                                            border-t-green-600
+                                            animate-spin
                                         "
                                     >
-
-                                        <motion.div
-                                            animate={{
-                                                rotate: 360,
-                                            }}
-                                            transition={{
-                                                duration: 1,
-                                                repeat: Infinity,
-                                                ease: "linear",
-                                            }}
-                                            className="
-                                                absolute
-                                                inset-0
-                                                rounded-full
-                                                border-[3px]
-                                                border-green-100
-                                                border-t-green-600
-                                                border-r-green-500
-                                            "
-                                        />
-
-                                        <motion.div
-                                            animate={{
-                                                scale: [
-                                                    0.8,
-                                                    1,
-                                                    0.8,
-                                                ],
-                                                opacity: [
-                                                    0.5,
-                                                    1,
-                                                    0.5,
-                                                ],
-                                            }}
-                                            transition={{
-                                                duration: 1.2,
-                                                repeat: Infinity,
-                                            }}
+                                        <div
                                             className="
                                                 w-2.5
                                                 h-2.5
@@ -2980,11 +2073,9 @@ function ChatLayout() {
                                                 bg-green-600
                                             "
                                         />
-
                                     </div>
 
                                     <div>
-
                                         <p
                                             className="
                                                 text-xs
@@ -2995,118 +2086,23 @@ function ChatLayout() {
                                             Voice message processing
                                         </p>
 
-                                        <div
+                                        <p
                                             className="
-                                                flex
-                                                items-center
-                                                gap-1
+                                                text-[11px]
+                                                text-green-600
                                                 mt-1
                                             "
                                         >
-
-                                            <motion.span
-                                                animate={{
-                                                    opacity: [
-                                                        0.3,
-                                                        1,
-                                                        0.3,
-                                                    ],
-                                                }}
-                                                transition={{
-                                                    duration: 1,
-                                                    repeat: Infinity,
-                                                }}
-                                                className="
-                                                    text-[11px]
-                                                    text-green-600
-                                                "
-                                            >
-                                                Listening
-                                            </motion.span>
-
-                                            <motion.span
-                                                animate={{
-                                                    opacity: [
-                                                        0.2,
-                                                        1,
-                                                        0.2,
-                                                    ],
-                                                }}
-                                                transition={{
-                                                    duration: 1,
-                                                    repeat: Infinity,
-                                                    delay: 0.2,
-                                                }}
-                                                className="
-                                                    text-green-600
-                                                "
-                                            >
-                                                •
-                                            </motion.span>
-
-                                            <motion.span
-                                                animate={{
-                                                    opacity: [
-                                                        0.2,
-                                                        1,
-                                                        0.2,
-                                                    ],
-                                                }}
-                                                transition={{
-                                                    duration: 1,
-                                                    repeat: Infinity,
-                                                    delay: 0.4,
-                                                }}
-                                                className="
-                                                    text-green-600
-                                                "
-                                            >
-                                                •
-                                            </motion.span>
-
-                                            <motion.span
-                                                animate={{
-                                                    opacity: [
-                                                        0.2,
-                                                        1,
-                                                        0.2,
-                                                    ],
-                                                }}
-                                                transition={{
-                                                    duration: 1,
-                                                    repeat: Infinity,
-                                                    delay: 0.6,
-                                                }}
-                                                className="
-                                                    text-green-600
-                                                "
-                                            >
-                                                •
-                                            </motion.span>
-
-                                        </div>
-
+                                            Listening...
+                                        </p>
                                     </div>
-
-                                </motion.div>
-
+                                </div>
                             )}
 
-                            {/* ==================================================
-                                AI TYPING INDICATOR
-                            ================================================== */}
+                            {/* AI THINKING */}
 
                             {loading && (
-
-                                <motion.div
-                                    initial={{
-                                        opacity: 0,
-                                        y: 8,
-                                    }}
-                                    animate={{
-                                        opacity: 1,
-                                        y: 0,
-                                    }}
+                                <div
                                     className="
                                         flex
                                         items-center
@@ -3121,7 +2117,6 @@ function ChatLayout() {
                                         w-fit
                                     "
                                 >
-
                                     <div
                                         className="
                                             w-8
@@ -3133,18 +2128,13 @@ function ChatLayout() {
                                             justify-center
                                         "
                                     >
-
                                         <Bot
                                             size={18}
-                                            className="
-                                                text-green-600
-                                            "
+                                            className="text-green-600"
                                         />
-
                                     </div>
 
                                     <div>
-
                                         <p
                                             className="
                                                 text-xs
@@ -3162,7 +2152,6 @@ function ChatLayout() {
                                                 mt-1
                                             "
                                         >
-
                                             <span
                                                 className="
                                                     w-1.5
@@ -3194,24 +2183,15 @@ function ChatLayout() {
                                                     [animation-delay:300ms]
                                                 "
                                             />
-
                                         </div>
-
                                     </div>
-
-                                </motion.div>
-
+                                </div>
                             )}
 
-                            <div
-                                ref={chatEndRef}
-                            />
-
+                            <div ref={chatEndRef} />
                         </div>
 
-                        {/* ==================================================
-                            INPUT
-                        ================================================== */}
+                        {/* INPUT */}
 
                         <div
                             className="
@@ -3221,7 +2201,6 @@ function ChatLayout() {
                                 bg-white
                             "
                         >
-
                             <ChatInput
                                 onSend={handleSend}
                                 onVoiceProcessing={
@@ -3232,15 +2211,10 @@ function ChatLayout() {
                                     voiceProcessing
                                 }
                             />
-
                         </div>
-
                     </motion.div>
-
                 )}
-
             </AnimatePresence>
-
         </div>
     );
 }
